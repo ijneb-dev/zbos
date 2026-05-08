@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZBOS · Inventory</title>
+<link rel="stylesheet" href="./tokens.css" />
+<link rel="stylesheet" href="./shell.css" />
+<style>
+  .inv-grid { display: grid; grid-template-columns: 240px 1fr 360px; gap: var(--space-6); margin-top: var(--space-4); }
+  .inv-tabs { display: flex; flex-direction: column; gap: var(--space-1); }
+  .inv-tab { padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; }
+  .inv-tab.is-active { background: var(--blue-50); color: var(--blue-700); font-weight: var(--weight-medium); }
+  .inv-tab__count { float: right; font-size: var(--text-xs); color: var(--text-tertiary); }
+
+  .recipe-head { display: flex; align-items: flex-start; justify-content: space-between; }
+  .recipe-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin: var(--space-4) 0; }
+  .recipe-stat { padding: var(--space-3); background: var(--gray-50); border-radius: var(--radius-md); }
+  .recipe-stat__label { font-size: var(--text-xs); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; }
+  .recipe-stat__val   { font-size: var(--text-xl); font-weight: var(--weight-semibold); margin-top: var(--space-1); }
+  .recipe-stat__sub   { font-size: var(--text-xs); color: var(--text-secondary); margin-top: var(--space-1); }
+
+  .ingredients { width: 100%; border-collapse: collapse; }
+  .ingredients th { text-align: left; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-tertiary); padding: var(--space-2); border-bottom: 1px solid var(--border-subtle); }
+  .ingredients td { padding: var(--space-3) var(--space-2); border-bottom: 1px solid var(--border-subtle); font-size: var(--text-sm); }
+  .ingredients tr.is-flagged td { background: var(--orange-50); }
+
+  .stock-list { display: flex; flex-direction: column; gap: var(--space-2); }
+  .stock-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--surface-card); }
+  .stock-row.is-low { border-color: var(--red-100); background: var(--red-50); }
+  .stock-row__name { flex: 1; font-size: var(--text-sm); font-weight: var(--weight-medium); }
+  .stock-row__sub  { font-size: var(--text-xs); color: var(--text-tertiary); }
+
+  .po-card { padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--blue-50); }
+  .po-card__title { font-weight: var(--weight-semibold); margin-bottom: var(--space-1); }
+</style>
+</head>
+<body>
+<a href="#main" class="zb-skip">Skip to content</a>
+<div class="zb-app">
+  <header class="zb-topnav">
+    <div class="zb-topnav__logo"><span class="zb-topnav__logo-mark" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#2563EB;color:#fff;border-radius:6px;font-weight:700;line-height:1;" aria-hidden="true"><svg viewBox="0 0 28 28" width="28" height="28" focusable="false" aria-hidden="true"><rect width="28" height="28" rx="6" fill="#2563EB"/><path d="M9 9 H19 L9 19 H19" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span>ZBOS</span></div>
+    <button class="zb-tenant"><span class="zb-tenant__mark">S</span><span>Stagione · Surry Hills</span><span class="zb-tenant__caret" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><polyline points="6 9 12 15 18 9"/></svg></span></button>
+    <nav class="zb-topnav__items">
+      <button class="zb-topnav__item" onclick="location.href='dashboard.html'">Home</button>
+      <button class="zb-topnav__item" onclick="location.href='pos.html'">Point of Sale</button>
+      <button class="zb-topnav__item" onclick="location.href='kds.html'">Kitchen Display</button>
+      <button class="zb-topnav__item" onclick="location.href='roster.html'">Team</button>
+      <button class="zb-topnav__item is-active">All Apps <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-left:4px;"><polyline points="6 9 12 15 18 9"/></svg></button>
+    </nav>
+    <div class="zb-topnav__right">
+      <button class="zb-iconbtn" aria-label="Search"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button>
+      <button class="zb-iconbtn" aria-label="Notifications"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="zb-iconbtn__dot"></span></button>
+      <button class="zb-iconbtn" aria-label="Settings"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div class="zb-user"><div class="zb-user__name-block"><span class="zb-user__name">Sarah Johnson</span><span class="zb-user__role">Owner & GM</span></div><span class="zb-avatar">SJ</span></div>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1" class="zb-page">
+    <div class="zb-page__header zb-row">
+      <div class="zb-grow">
+        <h1 class="zb-page__title">Inventory</h1>
+        <p class="zb-page__subtitle">Recipe & stock · Stagione · Surry Hills · last sync 14s ago</p>
+      </div>
+      <button class="zb-btn">Import invoice</button>
+      <button class="zb-btn zb-btn--primary">+ New recipe</button>
+    </div>
+
+    <div class="inv-grid">
+      <!-- Left: section nav -->
+      <aside class="zb-stack inv-tabs">
+        <span class="zb-tiny zb-muted" style="text-transform: uppercase; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3)">Recipes</span>
+        <div class="inv-tab is-active">Rigatoni alla genovese <span class="inv-tab__count">on menu</span></div>
+        <div class="inv-tab">Burrata <span class="inv-tab__count">on menu</span></div>
+        <div class="inv-tab">Bistecca <span class="inv-tab__count">on menu</span></div>
+        <div class="inv-tab">Tiramisù <span class="inv-tab__count">on menu</span></div>
+        <span class="zb-tiny zb-muted" style="text-transform: uppercase; letter-spacing: 0.04em; padding: var(--space-3) var(--space-3) var(--space-1)">Pantry</span>
+        <div class="inv-tab">Stock levels <span class="inv-tab__count" style="color: var(--red-600)">6 low</span></div>
+        <div class="inv-tab">Suppliers <span class="inv-tab__count">9</span></div>
+        <div class="inv-tab">Purchase orders <span class="inv-tab__count">3 open</span></div>
+      </aside>
+
+      <!-- Center: recipe detail -->
+      <section class="zb-card">
+        <div class="zb-card__head">
+          <div>
+            <h3 class="zb-card__title">Rigatoni alla genovese</h3>
+            <span class="zb-card__sub">Primi · 4 servings · last priced 3 days ago</span>
+          </div>
+          <span class="zb-pill zb-pill--warn">margin compression</span>
+        </div>
+        <div class="zb-card__body">
+          <div class="recipe-stats">
+            <div class="recipe-stat"><div class="recipe-stat__label">Recipe cost</div><div class="recipe-stat__val">$4.82</div><div class="recipe-stat__sub">per serving</div></div>
+            <div class="recipe-stat"><div class="recipe-stat__label">Menu price</div><div class="recipe-stat__val">$28.00</div></div>
+            <div class="recipe-stat"><div class="recipe-stat__label">GP%</div><div class="recipe-stat__val">82.8%</div><div class="recipe-stat__sub" style="color: var(--orange-600)">▾ 1.4 ppt vs last month</div></div>
+          </div>
+
+          <h4 style="margin: var(--space-3) 0 var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-semibold);">Ingredients · 4 servings</h4>
+          <table class="ingredients">
+            <thead><tr><th>Ingredient</th><th>Qty</th><th>Unit cost</th><th>Cost</th><th>Source</th></tr></thead>
+            <tbody>
+              <tr class="is-flagged">
+                <td><strong>Beef cheek</strong> · braised<br><span class="zb-tiny zb-muted">⚠ price up 9.5% · contract $46/kg vs last invoice $42/kg</span></td>
+                <td>800 g</td>
+                <td>$46.00 / kg</td>
+                <td>$36.80</td>
+                <td>Vic's Meats</td>
+              </tr>
+              <tr><td>Rigatoni 500g</td><td>500 g</td><td>$8.20 / kg</td><td>$4.10</td><td>Pasta House</td></tr>
+              <tr><td>Brown onions</td><td>1.2 kg</td><td>$3.50 / kg</td><td>$4.20</td><td>Sydney Markets</td></tr>
+              <tr><td>Pecorino · grated</td><td>120 g</td><td>$58.00 / kg</td><td>$6.96</td><td>Pino's</td></tr>
+              <tr><td>Olive oil EVOO</td><td>60 ml</td><td>$22.00 / L</td><td>$1.32</td><td>Pino's</td></tr>
+              <tr><td>Wine · white cooking</td><td>120 ml</td><td>$8.00 / L</td><td>$0.96</td><td>Cellarbrations</td></tr>
+              <tr><td>Stock · veal</td><td>400 ml</td><td>house · prep</td><td>$2.94</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Right: pantry / PO -->
+      <aside class="zb-stack">
+        <div class="zb-card">
+          <div class="zb-card__head"><h3 class="zb-card__title">Low stock · auto-flag</h3><span class="zb-pill zb-pill--bad">6</span></div>
+          <div class="zb-card__body">
+            <div class="stock-list">
+              <div class="stock-row is-low">
+                <div class="zb-grow">
+                  <div class="stock-row__name">Rigatoni 500g</div>
+                  <div class="stock-row__sub">on hand 4 packs · par 12 · supplier Pasta House</div>
+                </div>
+                <span class="zb-pill zb-pill--bad">par −8</span>
+              </div>
+              <div class="stock-row is-low">
+                <div class="zb-grow">
+                  <div class="stock-row__name">Beef cheek</div>
+                  <div class="stock-row__sub">on hand 3.2 kg · par 6 kg · Vic's Meats</div>
+                </div>
+                <span class="zb-pill zb-pill--bad">par −2.8</span>
+              </div>
+              <div class="stock-row">
+                <div class="zb-grow">
+                  <div class="stock-row__name">Pecorino</div>
+                  <div class="stock-row__sub">on hand 180 g · par 500 g · Pino's</div>
+                </div>
+                <span class="zb-pill zb-pill--warn">low</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="po-card">
+          <div class="po-card__title">Auto-suggested PO · Pasta House</div>
+          <p class="zb-tiny zb-muted" style="margin: 0 0 var(--space-3);">Reorder qty 16 packs · last lead time 4h · email already on file.</p>
+          <div class="zb-row" style="justify-content: space-between;">
+            <span class="zb-tiny zb-muted">Estimated total <strong style="color: var(--text-primary)">$131.20</strong></span>
+            <button class="zb-btn zb-btn--primary">Approve PO</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</body>
+</html>

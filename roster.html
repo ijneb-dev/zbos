@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZBOS · Roster</title>
+<link rel="stylesheet" href="./tokens.css" />
+<link rel="stylesheet" href="./shell.css" />
+<style>
+  /* Tabular data: real <table>. Visual layout via CSS Grid on the table element
+     so screen readers get row/column semantics + we keep the day-strip look. */
+  .roster-grid { display: grid; grid-template-columns: 200px repeat(7, 1fr); gap: 1px; background: var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; border-collapse: separate; width: 100%; }
+  .roster-grid thead, .roster-grid tbody, .roster-grid tr { display: contents; }
+  .roster-cell { background: var(--surface-card); padding: var(--space-3); min-height: 80px; vertical-align: top; }
+  .roster-head { background: var(--gray-50); font-size: var(--text-xs); text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 0.04em; padding: var(--space-3); text-align: left; font-weight: var(--weight-medium); }
+  .roster-head--day strong { display: block; color: var(--text-primary); font-size: var(--text-sm); }
+  .roster-head--day.is-highlight { background: var(--blue-50); }
+  .roster-name__btn { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+  .roster-cell__assign { display: block; width: 100%; margin-top: var(--space-1); padding: var(--space-1) var(--space-2); font-size: var(--text-xs); color: var(--blue-700); background: transparent; border: 1px dashed var(--border-default); border-radius: var(--radius-md); cursor: pointer; min-height: 28px; }
+  .roster-cell__assign:hover { border-color: var(--blue-600); background: var(--blue-50); }
+  .roster-name { display: flex; align-items: center; gap: var(--space-2); font-weight: var(--weight-medium); font-size: var(--text-sm); }
+  .roster-name__role { font-size: var(--text-xs); color: var(--text-tertiary); font-weight: var(--weight-regular); display: block; }
+  .roster-shift { padding: var(--space-2); border-radius: var(--radius-md); background: var(--blue-50); border-left: 3px solid var(--blue-600); margin-bottom: var(--space-1); font-size: var(--text-xs); }
+  .roster-shift--gap { background: var(--red-50); border-left-color: var(--red-600); border: 1px dashed var(--red-300, #FCA5A5); color: var(--red-700); text-align: center; padding: var(--space-3); }
+  .roster-shift--ghost { background: var(--orange-50); border-left-color: var(--orange-500); color: var(--orange-700); }
+  .open-pool { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); padding: var(--space-4); margin-top: var(--space-6); }
+  .open-pool__items { display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3); }
+  .open-pool__chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-pill); font-size: var(--text-sm); cursor: grab; }
+
+  .penalty-drawer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface-card); border-top: 1px solid var(--border-subtle); box-shadow: var(--shadow-lg); padding: var(--space-5) var(--space-8); z-index: var(--z-overlay); transform: translateY(100%); transition: transform 0.22s ease; }
+  .penalty-drawer.is-open { transform: translateY(0); }
+  .roster-cell.drag-over { outline: 2px dashed var(--blue-500); background: var(--blue-50); }
+  .open-pool__chip[draggable]:active { opacity: 0.5; cursor: grabbing; }
+  .penalty-drawer__head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-3); }
+  .penalty-drawer__title { font-size: var(--text-lg); font-weight: var(--weight-semibold); margin: 0; }
+  .penalty-drawer__sub { font-size: var(--text-sm); color: var(--text-secondary); }
+  .penalty-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); margin: var(--space-3) 0; }
+  .penalty-tile { padding: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
+  .penalty-tile__label { font-size: var(--text-xs); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; }
+  .penalty-tile__value { font-size: var(--text-base); font-weight: var(--weight-semibold); margin-top: var(--space-1); }
+  .penalty-tile.is-warn { background: var(--orange-50); border-color: var(--orange-100); }
+  .penalty-tile.is-bad { background: var(--red-50); border-color: var(--red-100); }
+  .penalty-tile.is-ok { background: var(--green-50); border-color: var(--green-100); }
+  .penalty-source { font-size: var(--text-xs); color: var(--text-tertiary); font-style: italic; }
+</style>
+</head>
+<body>
+<a href="#main" class="zb-skip">Skip to content</a>
+<div class="zb-app">
+  <header class="zb-topnav">
+    <div class="zb-topnav__logo"><span class="zb-topnav__logo-mark" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#2563EB;color:#fff;border-radius:6px;font-weight:700;line-height:1;" aria-hidden="true"><svg viewBox="0 0 28 28" width="28" height="28" focusable="false" aria-hidden="true"><rect width="28" height="28" rx="6" fill="#2563EB"/><path d="M9 9 H19 L9 19 H19" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span>ZBOS</span></div>
+    <button class="zb-tenant"><span class="zb-tenant__mark">S</span><span>Stagione · Surry Hills</span><span class="zb-tenant__caret" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><polyline points="6 9 12 15 18 9"/></svg></span></button>
+    <nav class="zb-topnav__items">
+      <button class="zb-topnav__item" onclick="location.href='dashboard.html'">Home</button>
+      <button class="zb-topnav__item" onclick="location.href='pos.html'">Point of Sale</button>
+      <button class="zb-topnav__item" onclick="location.href='kds.html'">Kitchen Display</button>
+      <button class="zb-topnav__item is-active">Team</button>
+      <button class="zb-topnav__item" onclick="location.href='insights.html'">Analytics</button>
+      <button class="zb-topnav__item">All Apps <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-left:4px;"><polyline points="6 9 12 15 18 9"/></svg></button>
+    </nav>
+    <div class="zb-topnav__right">
+      <button class="zb-iconbtn" aria-label="Search"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button>
+      <button class="zb-iconbtn" aria-label="Notifications"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="zb-iconbtn__dot"></span></button>
+      <button class="zb-iconbtn" aria-label="Settings"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div class="zb-user"><div class="zb-user__name-block"><span class="zb-user__name">Sarah Johnson</span><span class="zb-user__role">Owner & GM</span></div><span class="zb-avatar">SJ</span></div>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1" class="zb-page" style="padding-bottom: var(--space-8);">
+    <div class="zb-page__header zb-row">
+      <div class="zb-grow">
+        <h1 class="zb-page__title">Roster</h1>
+        <p class="zb-page__subtitle">Week of May 18–24, 2026 · 14 staff · Restaurant Industry Award MA000119</p>
+      </div>
+      <button class="zb-btn">Templates</button>
+      <button class="zb-btn">Publish</button>
+      <button class="zb-btn zb-btn--primary">+ Add Shift</button>
+    </div>
+
+    <table class="roster-grid" role="grid" aria-label="Weekly roster">
+      <thead>
+        <tr>
+          <th class="roster-head" scope="col">Staff</th>
+          <th class="roster-head roster-head--day" scope="col"><strong>Mon 18</strong>11 staff</th>
+          <th class="roster-head roster-head--day" scope="col"><strong>Tue 19</strong>9 staff</th>
+          <th class="roster-head roster-head--day" scope="col"><strong>Wed 20</strong>10 staff</th>
+          <th class="roster-head roster-head--day" scope="col"><strong>Thu 21</strong>12 staff</th>
+          <th class="roster-head roster-head--day is-highlight" scope="col"><strong>Fri 22</strong>10 → 9 staff <span class="zb-pill zb-pill--bad">gap</span></th>
+          <th class="roster-head roster-head--day" scope="col"><strong>Sat 23</strong>14 staff</th>
+          <th class="roster-head roster-head--day" scope="col"><strong>Sun 24</strong>13 staff</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th class="roster-cell" scope="row"><span class="roster-name">Emma W.<span class="roster-name__role">Head Barista</span></span></th>
+          <td class="roster-cell"><div class="roster-shift">7–15 · floor</div></td>
+          <td class="roster-cell"><div class="roster-shift">7–15 · floor</div></td>
+          <td class="roster-cell"><button type="button" class="roster-cell__assign" aria-label="Assign Emma W. to Wednesday May 20">+ Assign</button></td>
+          <td class="roster-cell"><div class="roster-shift">7–15 · floor</div></td>
+          <td class="roster-cell"><div class="roster-shift">7–15 · floor</div></td>
+          <td class="roster-cell"><div class="roster-shift">9–17 · floor</div></td>
+          <td class="roster-cell"><button type="button" class="roster-cell__assign" aria-label="Assign Emma W. to Sunday May 24">+ Assign</button></td>
+        </tr>
+        <tr>
+          <th class="roster-cell" scope="row"><span class="roster-name">Alex T.<span class="roster-name__role">Server</span></span></th>
+          <td class="roster-cell"><button type="button" class="roster-cell__assign" aria-label="Assign Alex T. to Monday May 18">+ Assign</button></td>
+          <td class="roster-cell"><div class="roster-shift">17–23 · floor</div></td>
+          <td class="roster-cell"><div class="roster-shift">17–23 · floor</div></td>
+          <td class="roster-cell"><div class="roster-shift">17–23 · floor</div></td>
+          <td class="roster-cell"><div class="roster-shift">17–23 · floor</div></td>
+          <td class="roster-cell"><div class="roster-shift">17–23 · floor</div></td>
+          <td class="roster-cell"><button type="button" class="roster-cell__assign" aria-label="Assign Alex T. to Sunday May 24">+ Assign</button></td>
+        </tr>
+        <tr>
+          <th class="roster-cell" scope="row"><span class="roster-name">Jess L.<span class="roster-name__role">Host</span></span></th>
+          <td class="roster-cell"><div class="roster-shift">11–15 · host</div></td>
+          <td class="roster-cell"><button type="button" class="roster-cell__assign" aria-label="Assign Jess L. to Tuesday May 19">+ Assign</button></td>
+          <td class="roster-cell"><div class="roster-shift">11–15 · host</div></td>
+          <td class="roster-cell"><button type="button" class="roster-cell__assign" aria-label="Assign Jess L. to Thursday May 21">+ Assign</button></td>
+          <td class="roster-cell"><div class="roster-shift--gap" role="status">⚠ Sick · 11–15 unfilled <button type="button" class="zb-btn" style="margin-top: var(--space-2); font-size: var(--text-xs);" aria-label="Assign someone to Friday May 22 lunch shift">Assign…</button></div></td>
+          <td class="roster-cell"><div class="roster-shift">17–23 · host</div></td>
+          <td class="roster-cell"><div class="roster-shift">11–15 · host</div></td>
+        </tr>
+        <tr>
+          <th class="roster-cell" scope="row"><span class="roster-name">Tom R.<span class="roster-name__role">Floor</span></span></th>
+          <td class="roster-cell"><button type="button" class="roster-cell__assign" aria-label="Assign Tom R. to Monday May 18">+ Assign</button></td>
+          <td class="roster-cell"><div class="roster-shift">11–15 · floor</div></td>
+          <td class="roster-cell"><div class="roster-shift">11–15 · floor</div></td>
+          <td class="roster-cell"><button type="button" class="roster-cell__assign" aria-label="Assign Tom R. to Thursday May 21">+ Assign</button></td>
+          <td class="roster-cell"><div class="roster-shift--ghost" aria-live="polite">+ Tom (preview)</div></td>
+          <td class="roster-cell"><button type="button" class="roster-cell__assign" aria-label="Assign Tom R. to Saturday May 23">+ Assign</button></td>
+          <td class="roster-cell"><div class="roster-shift">14–22 · floor</div></td>
+        </tr>
+        <tr>
+          <th class="roster-cell" scope="row"><span class="roster-name">Mauro R.<span class="roster-name__role">Head Chef</span></span></th>
+          <td class="roster-cell"><div class="roster-shift">10–22 · BOH</div></td>
+          <td class="roster-cell"><div class="roster-shift">10–22 · BOH</div></td>
+          <td class="roster-cell"><div class="roster-shift">10–22 · BOH</div></td>
+          <td class="roster-cell"><div class="roster-shift">10–22 · BOH</div></td>
+          <td class="roster-cell"><div class="roster-shift">10–22 · BOH</div></td>
+          <td class="roster-cell"><div class="roster-shift">10–22 · BOH</div></td>
+          <td class="roster-cell"><button type="button" class="roster-cell__assign" aria-label="Assign Mauro R. to Sunday May 24">+ Assign</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="open-pool" aria-label="Open shift pool, Friday lunch">
+      <div class="zb-row"><h3 class="zb-card__title zb-grow">Open shift pool · Friday 11–15 lunch</h3><span class="zb-pill zb-pill--neutral">3 candidates</span></div>
+      <p class="zb-tiny zb-muted" style="margin-top: var(--space-1);">Drag a candidate into Friday's empty cell — or use the Assign button for keyboard-only assignment. Either path opens the award impact preview before committing.</p>
+      <ul class="open-pool__items" style="list-style: none; padding: 0;">
+        <li class="open-pool__chip" draggable="true" data-name="Tom Reilly" data-penalty="bad">
+          <span>⊕ <strong>Tom Reilly</strong> · Floor · <span class="zb-pill zb-pill--bad">→ Sun penalty</span></span>
+          <button type="button" class="zb-btn assign-btn" data-name="Tom Reilly" data-penalty="bad" style="margin-left: var(--space-2); padding: var(--space-1) var(--space-3); font-size: var(--text-xs);" aria-label="Assign Tom Reilly to Friday lunch">Assign</button>
+        </li>
+        <li class="open-pool__chip" draggable="true" data-name="Priya Shah" data-penalty="ok">
+          <span>⊕ <strong>Priya Shah</strong> · Floor · <span class="zb-pill zb-pill--ok">clean</span></span>
+          <button type="button" class="zb-btn assign-btn" data-name="Priya Shah" data-penalty="ok" style="margin-left: var(--space-2); padding: var(--space-1) var(--space-3); font-size: var(--text-xs);" aria-label="Assign Priya Shah to Friday lunch">Assign</button>
+        </li>
+        <li class="open-pool__chip" draggable="true" data-name="Ben Okonkwo" data-penalty="ok">
+          <span>⊕ <strong>Ben Okonkwo</strong> · Floor · <span class="zb-pill zb-pill--ok">clean</span></span>
+          <button type="button" class="zb-btn assign-btn" data-name="Ben Okonkwo" data-penalty="ok" style="margin-left: var(--space-2); padding: var(--space-1) var(--space-3); font-size: var(--text-xs);" aria-label="Assign Ben Okonkwo to Friday lunch">Assign</button>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- Penalty Preview Drawer -->
+  <aside id="penalty-drawer" class="penalty-drawer" role="dialog" aria-label="Award compliance preview" aria-modal="true">
+    <div class="penalty-drawer__head">
+      <div>
+        <h3 id="drawer-title" class="penalty-drawer__title">Tom Reilly · Friday 11:00–15:00</h3>
+        <p class="penalty-drawer__sub">Preview — Restaurant Industry Award MA000119</p>
+      </div>
+      <div class="zb-row">
+        <button id="drawer-cancel" class="zb-btn">Cancel</button>
+        <button id="drawer-confirm" class="zb-btn zb-btn--primary">Confirm shift</button>
+      </div>
+    </div>
+    <div id="penalty-grid-tom" class="penalty-grid">
+      <div class="penalty-tile is-warn">
+        <div class="penalty-tile__label">Hours this week</div>
+        <div class="penalty-tile__value">47h <span class="zb-pill zb-pill--warn">+OT 9h</span></div>
+        <p class="zb-tiny zb-muted" style="margin-top: var(--space-1)">Over 38h → overtime triggered</p>
+      </div>
+      <div class="penalty-tile is-bad">
+        <div class="penalty-tile__label">Sun 24 penalty</div>
+        <div class="penalty-tile__value">200%</div>
+        <p class="zb-tiny zb-muted" style="margin-top: var(--space-1)">Clause 26.2 · existing Sun 14:00–22:00 shift</p>
+      </div>
+      <div class="penalty-tile is-bad">
+        <div class="penalty-tile__label">Wage cost delta (fortnight)</div>
+        <div class="penalty-tile__value">+ $184.50</div>
+      </div>
+      <div class="penalty-tile is-ok">
+        <div class="penalty-tile__label">Compliance</div>
+        <div class="penalty-tile__value">✓ rest · ✓ daily cap</div>
+        <p class="zb-tiny zb-muted" style="margin-top: var(--space-1)">10h rest window OK · &lt; 12h day</p>
+      </div>
+    </div>
+    <div id="penalty-grid-clean" class="penalty-grid" style="display:none">
+      <div class="penalty-tile is-ok">
+        <div class="penalty-tile__label">Hours this week</div>
+        <div class="penalty-tile__value">32h <span class="zb-pill zb-pill--ok">under cap</span></div>
+        <p class="zb-tiny zb-muted" style="margin-top: var(--space-1)">Well within 38h ordinary time</p>
+      </div>
+      <div class="penalty-tile is-ok">
+        <div class="penalty-tile__label">Weekend penalty</div>
+        <div class="penalty-tile__value">None</div>
+        <p class="zb-tiny zb-muted" style="margin-top: var(--space-1)">No existing weekend shifts this fortnight</p>
+      </div>
+      <div class="penalty-tile is-ok">
+        <div class="penalty-tile__label">Wage cost delta (fortnight)</div>
+        <div class="penalty-tile__value">+ $64.00</div>
+      </div>
+      <div class="penalty-tile is-ok">
+        <div class="penalty-tile__label">Compliance</div>
+        <div class="penalty-tile__value">✓ rest · ✓ daily cap</div>
+        <p class="zb-tiny zb-muted" style="margin-top: var(--space-1)">10h rest window OK · &lt; 12h day</p>
+      </div>
+    </div>
+    <p class="penalty-source">Live evaluation · award rules engine · sources: ShiftStarted, ClockOut, contract terms.</p>
+  </aside>
+</div>
+
+<script>
+(function () {
+  var drawer = document.getElementById('penalty-drawer');
+  var drawerTitle = document.getElementById('drawer-title');
+  var gridTom = document.getElementById('penalty-grid-tom');
+  var gridClean = document.getElementById('penalty-grid-clean');
+  var gapCell = document.querySelector('.roster-shift--gap').closest('td');
+  var dragging = null;
+
+  function openDrawer(name, penalty) {
+    drawerTitle.textContent = name + ' · Friday 11:00–15:00';
+    gridTom.style.display = penalty === 'bad' ? '' : 'none';
+    gridClean.style.display = penalty === 'ok' ? '' : 'none';
+    drawer.classList.add('is-open');
+    drawer.dataset.pending = name;
+    drawer.dataset.pendingPenalty = penalty;
+    document.body.style.paddingBottom = drawer.offsetHeight + 'px';
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('is-open');
+    document.body.style.paddingBottom = '';
+    if (gapCell) gapCell.classList.remove('drag-over');
+  }
+
+  // Assign buttons in open pool
+  document.querySelectorAll('.assign-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openDrawer(btn.dataset.name, btn.dataset.penalty);
+    });
+  });
+
+  // Assign button in gap cell
+  var gapAssign = document.querySelector('.roster-shift--gap .zb-btn');
+  if (gapAssign) {
+    gapAssign.addEventListener('click', function () {
+      openDrawer('Tom Reilly', 'bad');
+    });
+  }
+
+  // Drag from open pool chips
+  document.querySelectorAll('.open-pool__chip[draggable]').forEach(function (chip) {
+    chip.addEventListener('dragstart', function (e) {
+      dragging = chip;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', chip.dataset.name);
+    });
+    chip.addEventListener('dragend', function () { dragging = null; });
+  });
+
+  // Drop target: Friday gap cell
+  if (gapCell) {
+    gapCell.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      gapCell.classList.add('drag-over');
+    });
+    gapCell.addEventListener('dragleave', function () {
+      gapCell.classList.remove('drag-over');
+    });
+    gapCell.addEventListener('drop', function (e) {
+      e.preventDefault();
+      gapCell.classList.remove('drag-over');
+      if (dragging) {
+        openDrawer(dragging.dataset.name, dragging.dataset.penalty);
+      }
+    });
+  }
+
+  // Confirm — fill the cell, hide drawer, remove chip
+  document.getElementById('drawer-confirm').addEventListener('click', function () {
+    var name = drawer.dataset.pending;
+    var penalty = drawer.dataset.pendingPenalty;
+    if (gapCell) {
+      var shortName = name.split(' ')[0];
+      gapCell.innerHTML = '<div class="roster-shift' + (penalty === 'bad' ? ' roster-shift--ghost' : '') + '">' + shortName + ' · 11–15 · floor' + (penalty === 'bad' ? ' <span class="zb-pill zb-pill--warn">OT</span>' : '') + '</div>';
+    }
+    // Remove the assigned chip from pool
+    document.querySelectorAll('.open-pool__chip[draggable]').forEach(function (chip) {
+      if (chip.dataset.name === name) chip.remove();
+    });
+    closeDrawer();
+  });
+
+  document.getElementById('drawer-cancel').addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
+})();
+</script>
+</body>
+</html>

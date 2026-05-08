@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZBOS · Insights / AI Copilot</title>
+<link rel="stylesheet" href="./tokens.css" />
+<link rel="stylesheet" href="./shell.css" />
+<style>
+  .copilot-grid { display: grid; grid-template-columns: 280px 1fr; gap: var(--space-6); }
+  .ctx-list { display: flex; flex-direction: column; gap: var(--space-1); }
+  .ctx-item { padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; }
+  .ctx-item.is-active { background: var(--blue-50); color: var(--blue-700); font-weight: var(--weight-medium); }
+
+  .chat { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); display: flex; flex-direction: column; min-height: 720px; }
+  .chat__head { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; gap: var(--space-3); }
+  .chat__title { font-weight: var(--weight-semibold); }
+  .chat__chip { padding: var(--space-1) var(--space-3); background: var(--blue-50); color: var(--blue-700); border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: var(--weight-medium); }
+
+  .chat__stream { padding: var(--space-5); flex: 1; display: flex; flex-direction: column; gap: var(--space-5); }
+
+  .msg { display: flex; gap: var(--space-3); }
+  .msg__avatar { width: 32px; height: 32px; border-radius: var(--radius-pill); background: var(--gray-200); color: var(--gray-700); display: inline-flex; align-items: center; justify-content: center; font-size: var(--text-xs); font-weight: var(--weight-semibold); flex: none; }
+  .msg__avatar.is-bot { background: var(--blue-600); color: var(--white); }
+  .msg__body { flex: 1; }
+  .msg__name { font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: var(--space-1); }
+  .msg__bubble { padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--gray-50); font-size: var(--text-sm); line-height: var(--leading-loose); }
+  .msg.is-user .msg__bubble { background: var(--blue-50); }
+
+  .driver-list { margin: var(--space-3) 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
+  .driver { padding: var(--space-3); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); display: flex; gap: var(--space-3); align-items: flex-start; }
+  .driver__num { width: 22px; height: 22px; border-radius: var(--radius-pill); background: var(--gray-900); color: var(--white); display: inline-flex; align-items: center; justify-content: center; font-size: var(--text-xs); font-weight: var(--weight-bold); flex: none; }
+  .driver__title { font-size: var(--text-sm); font-weight: var(--weight-semibold); margin: 0 0 var(--space-1); }
+  .driver__delta { font-size: var(--text-xs); color: var(--text-secondary); }
+
+  .actions { display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3); }
+  .actions .zb-btn { font-size: var(--text-sm); }
+
+  .chat__compose { display: flex; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border-subtle); background: var(--surface-card); border-bottom-left-radius: var(--radius-xl); border-bottom-right-radius: var(--radius-xl); }
+  .chat__compose input { flex: 1; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: var(--space-3); font-size: var(--text-sm); outline: none; }
+  .chat__compose input:focus { border-color: var(--border-focus); box-shadow: var(--shadow-focus); }
+  .zb-cite { background: var(--blue-50); color: var(--blue-700); border-radius: 3px; padding: 1px 4px; font-size: 0.88em; cursor: pointer; border-bottom: 1px dashed var(--blue-400); }
+  .zb-cite:hover { background: var(--blue-100); }
+  .sql-popover { position: fixed; z-index: 9999; background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 14px 16px; font-size: 12px; font-family: var(--font-mono, monospace); line-height: 1.6; max-width: 560px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); white-space: pre; pointer-events: none; }
+  .sql-popover__label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 6px; }
+  .sql-kw { color: #7dd3fc; } .sql-fn { color: #a78bfa; } .sql-str { color: #86efac; } .sql-cm { color: #64748b; }
+</style>
+</head>
+<body>
+<a href="#main" class="zb-skip">Skip to content</a>
+<div class="zb-app">
+  <header class="zb-topnav">
+    <div class="zb-topnav__logo"><span class="zb-topnav__logo-mark" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#2563EB;color:#fff;border-radius:6px;font-weight:700;line-height:1;" aria-hidden="true"><svg viewBox="0 0 28 28" width="28" height="28" focusable="false" aria-hidden="true"><rect width="28" height="28" rx="6" fill="#2563EB"/><path d="M9 9 H19 L9 19 H19" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span>ZBOS</span></div>
+    <button class="zb-tenant"><span class="zb-tenant__mark">S</span><span>Stagione · Surry Hills</span><span class="zb-tenant__caret" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><polyline points="6 9 12 15 18 9"/></svg></span></button>
+    <nav class="zb-topnav__items">
+      <button class="zb-topnav__item" onclick="location.href='dashboard.html'">Home</button>
+      <button class="zb-topnav__item" onclick="location.href='pos.html'">Point of Sale</button>
+      <button class="zb-topnav__item" onclick="location.href='kds.html'">Kitchen Display</button>
+      <button class="zb-topnav__item" onclick="location.href='roster.html'">Team</button>
+      <button class="zb-topnav__item is-active">Analytics</button>
+      <button class="zb-topnav__item">All Apps <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-left:4px;"><polyline points="6 9 12 15 18 9"/></svg></button>
+    </nav>
+    <div class="zb-topnav__right">
+      <button class="zb-iconbtn" aria-label="Search"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button>
+      <button class="zb-iconbtn" aria-label="Notifications"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="zb-iconbtn__dot"></span></button>
+      <button class="zb-iconbtn" aria-label="Settings"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div class="zb-user"><div class="zb-user__name-block"><span class="zb-user__name">Sarah Johnson</span><span class="zb-user__role">Owner & GM</span></div><span class="zb-avatar">SJ</span></div>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1" class="zb-page">
+    <div class="zb-page__header">
+      <h1 class="zb-page__title">Insights · AI Copilot <span class="zb-pill zb-pill--brand" style="font-weight: var(--weight-medium); margin-left: var(--space-2)">grounded</span></h1>
+      <p class="zb-page__subtitle">Ask anything across sales, labour, inventory, bookings, guests. Every answer cites the events it was built from.</p>
+    </div>
+
+    <div class="copilot-grid">
+      <aside>
+        <div class="zb-card">
+          <div class="zb-card__head"><h3 class="zb-card__title">Saved threads</h3></div>
+          <div class="zb-card__body" style="padding: var(--space-2)">
+            <div class="ctx-list">
+              <div class="ctx-item is-active">Why is my Friday lunch GP down?</div>
+              <div class="ctx-item">Forecast labour for next 4 weeks</div>
+              <div class="ctx-item">Top 5 GP%-dragging dishes</div>
+              <div class="ctx-item">Compare May vs April covers</div>
+              <div class="ctx-item">Which suppliers raised prices?</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="zb-card" style="margin-top: var(--space-4)">
+          <div class="zb-card__head"><h3 class="zb-card__title">Try</h3></div>
+          <div class="zb-card__body">
+            <p class="zb-tiny zb-muted" style="margin-bottom: var(--space-2)">Suggested questions, generated from this venue's last 30 days.</p>
+            <div style="display: flex; flex-direction: column; gap: var(--space-2)">
+              <button class="zb-btn">"Which dish has the worst GP this month?"</button>
+              <button class="zb-btn">"How many no-shows last week?"</button>
+              <button class="zb-btn">"Best server upsell rate?"</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="chat">
+        <div class="chat__head">
+          <span class="chat__title">Why is my Friday lunch GP down?</span>
+          <span class="chat__chip">Stagione · Surry Hills · last 30 days</span>
+        </div>
+
+        <div class="chat__stream">
+
+          <div class="msg is-user">
+            <div class="msg__avatar">SJ</div>
+            <div class="msg__body">
+              <div class="msg__name">Sarah · 19:12</div>
+              <div class="msg__bubble">Why is my Friday lunch GP down?</div>
+            </div>
+          </div>
+
+          <div class="msg">
+            <div class="msg__avatar is-bot">Z</div>
+            <div class="msg__body">
+              <div class="msg__name">ZBOS Copilot · 19:12 · 3.2s</div>
+              <div class="msg__bubble">
+                Friday lunch GP for the last 4 weeks averaged <span class="zb-cite">71.2%</span>, down from <span class="zb-cite">76.8%</span> the prior 4 weeks (<strong style="color: var(--red-600)">−5.6 ppt</strong>). Three drivers, biggest first:
+                <ul class="driver-list">
+                  <li class="driver">
+                    <span class="driver__num">1</span>
+                    <div>
+                      <div class="driver__title">Beef cheek price up 9.5%</div>
+                      <div class="driver__delta">Vic's Meats · effective Apr 22 · affects rigatoni alla genovese + ossobuco · together <span class="zb-cite">28% of Friday lunch revenue</span>.</div>
+                      <div class="driver__delta" style="color: var(--red-600); margin-top: var(--space-1)">Margin impact: −3.1 ppt</div>
+                    </div>
+                  </li>
+                  <li class="driver">
+                    <span class="driver__num">2</span>
+                    <div>
+                      <div class="driver__title">Lunch covers down 11%</div>
+                      <div class="driver__delta">Avg <span class="zb-cite">38 → 34</span> covers · fixed kitchen labour unchanged.</div>
+                      <div class="driver__delta" style="color: var(--red-600); margin-top: var(--space-1)">Margin impact: −1.9 ppt (labour-as-%-of-revenue rose 2.4 ppt)</div>
+                    </div>
+                  </li>
+                  <li class="driver">
+                    <span class="driver__num">3</span>
+                    <div>
+                      <div class="driver__title">Discount mix up</div>
+                      <div class="driver__delta">Industry-loyalty 15% redemptions doubled · <span class="zb-cite">8 → 17</span> per week.</div>
+                      <div class="driver__delta" style="color: var(--red-600); margin-top: var(--space-1)">Margin impact: −0.6 ppt</div>
+                    </div>
+                  </li>
+                </ul>
+                <p style="margin: var(--space-3) 0 0">Want me to model two responses?</p>
+                <div class="actions">
+                  <button class="zb-btn">a · Reprice rigatoni → $32 (back to 76% GP, ~−2 covers/wk predicted)</button>
+                  <button class="zb-btn zb-btn--primary">b · Sub beef cheek with brisket on the menu (recipe variant, 73% GP, no price change)</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="msg">
+            <div class="msg__avatar is-bot">Z</div>
+            <div class="msg__body">
+              <div class="msg__name">Sources used</div>
+              <div class="msg__bubble" style="background: var(--gray-100); font-size: var(--text-xs); font-family: var(--font-mono);">
+                <div>OrderCompleted · 1,847 events · last 56 days</div>
+                <div>Recipe BOM · rigatoni-alla-genovese.v3, ossobuco.v2</div>
+                <div>SupplierInvoice · vic-meats · 2026-04-22T08:17Z (price change event)</div>
+                <div>ShiftStarted + ClockOut · workforce.events · last 56 days</div>
+                <div>DiscountApplied · industry-loyalty-15 · last 56 days</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <form id="chat-form" class="chat__compose" onsubmit="return false;">
+          <input id="chat-input" placeholder="Ask another question · e.g. 'forecast labour for the long weekend'" />
+          <button class="zb-btn zb-btn--primary" type="submit" onclick="sendQuestion()">Ask</button>
+        </form>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var stream = document.querySelector('.chat__stream');
+  var input  = document.getElementById('chat-input');
+  var title  = document.querySelector('.chat__title');
+
+  var CANNED = {
+    'worst gp': {
+      q: 'Which dish has the worst GP this month?',
+      a: 'Tiramisù is your worst-GP dish this month at <span class="zb-cite">54.2%</span> — down from 61% in April. Primary driver: egg prices up 22% (SupplierInvoice · egg-co · 2026-04-14). Bistecca is close at 56.8% but lower volume. Want me to pull the full BOM and model a substitution?',
+      sources: ['Recipe BOM · tiramisù.v2', 'OrderCompleted · 847 events · last 30 days', 'SupplierInvoice · egg-co · 2026-04-14T09:22Z']
+    },
+    'no-show': {
+      q: 'How many no-shows last week?',
+      a: '<span class="zb-cite">7 no-shows</span> across 23 bookings last week — 30.4% rate, above your 18% trailing average. 5 occurred on Friday dinner. No deposits collected on any of them. Want me to draft a deposit policy recommendation based on cover value and no-show frequency?',
+      sources: ['BookingCreated · reservation.events · last 7 days', 'BookingNoShow · reservation.events · last 7 days']
+    },
+    'upsell': {
+      q: 'Best server upsell rate?',
+      a: '<strong>Alex T.</strong> leads at <span class="zb-cite">34% upsell rate</span> — 34% of his tables take a paired item (wine, dessert, side). Floor average is 19%. Priya Shah is second at 28%. Both peak between 7–8 pm on Fridays. Want a full staff upsell breakdown?',
+      sources: ['OrderCompleted · modifier_added events · last 30 days', 'ShiftStarted · staff_id join · workforce.events']
+    },
+    'labour': {
+      q: 'Forecast labour for the long weekend',
+      a: 'Long weekend (Jun 7–9): projecting <span class="zb-cite">$4,210 labour cost</span> at current roster vs <span class="zb-cite">$5,870 revenue</span> — 71.7% labour-to-revenue. Public holiday loading adds $840 above base wages (MA000119 Clause 29). Recommend adding 2 casual covers Saturday dinner to hold GP above 68%. Want me to draft those shifts?',
+      sources: ['ShiftStarted + ClockOut · workforce.events · last 90 days', 'PublicHoliday · au-nsw · 2026', 'Award · MA000119 Clause 29 · loading rules']
+    }
+  };
+
+  var THREADS = {
+    'Why is my Friday lunch GP down?': 'Why is my Friday lunch GP down?',
+    'Forecast labour for next 4 weeks': 'labour',
+    'Top 5 GP%-dragging dishes': 'worst gp',
+    'Compare May vs April covers': 'Compare May vs April covers',
+    'Which suppliers raised prices?': 'Which suppliers raised prices?'
+  };
+
+  function now() {
+    var d = new Date();
+    return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
+  function appendMsg(html, isUser) {
+    var avatar = isUser ? 'SJ' : 'Z';
+    var cls = isUser ? ' is-user' : '';
+    var avatarCls = isUser ? '' : ' is-bot';
+    var name = isUser ? 'Sarah · ' + now() : 'ZBOS Copilot · ' + now() + ' · 2.8s';
+    var el = document.createElement('div');
+    el.className = 'msg' + cls;
+    el.innerHTML = '<div class="msg__avatar' + avatarCls + '">' + avatar + '</div><div class="msg__body"><div class="msg__name">' + name + '</div><div class="msg__bubble">' + html + '</div></div>';
+    stream.appendChild(el);
+    stream.scrollTop = stream.scrollHeight;
+    return el;
+  }
+
+  function appendSources(lines) {
+    var html = lines.join('<br>');
+    var el = document.createElement('div');
+    el.className = 'msg';
+    el.innerHTML = '<div class="msg__avatar is-bot">Z</div><div class="msg__body"><div class="msg__name">Sources used</div><div class="msg__bubble" style="background:var(--gray-100);font-size:var(--text-xs);font-family:var(--font-mono);">' + html + '</div></div>';
+    stream.appendChild(el);
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  function typeIn(el, html, cb) {
+    el.querySelector('.msg__bubble').innerHTML = '';
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    var text = tmp.textContent;
+    var i = 0;
+    var iv = setInterval(function () {
+      i += 3;
+      el.querySelector('.msg__bubble').textContent = text.slice(0, i);
+      stream.scrollTop = stream.scrollHeight;
+      if (i >= text.length) {
+        clearInterval(iv);
+        el.querySelector('.msg__bubble').innerHTML = html;
+        if (cb) cb();
+      }
+    }, 18);
+  }
+
+  function matchCanned(q) {
+    var lower = q.toLowerCase();
+    for (var key in CANNED) {
+      if (lower.indexOf(key) !== -1) return CANNED[key];
+    }
+    return null;
+  }
+
+  function respond(questionText) {
+    appendMsg(questionText, true);
+    var canned = matchCanned(questionText);
+    setTimeout(function () {
+      var botEl = appendMsg('…', false);
+      setTimeout(function () {
+        var answer = canned ? canned.a : 'I\'ve searched the last 30 days of events for <em>"' + questionText + '"</em>. Crunching 1,847 OrderCompleted, 312 ShiftStarted, and 94 SupplierInvoice events — give me a moment.';
+        var sources = canned ? canned.sources : ['OrderCompleted · last 30 days', 'ShiftStarted · workforce.events', 'SupplierInvoice · all-vendors · last 90 days'];
+        typeIn(botEl, answer, function () { appendSources(sources); });
+      }, 600);
+    }, 300);
+  }
+
+  window.sendQuestion = function () {
+    var q = input.value.trim();
+    if (!q) return;
+    input.value = '';
+    respond(q);
+  };
+
+  // Enter key
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); window.sendQuestion(); }
+  });
+
+  // Suggestion chips
+  document.querySelectorAll('.zb-card:last-child .zb-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var q = btn.textContent.replace(/["""]/g, '').trim();
+      input.value = q;
+      window.sendQuestion();
+    });
+  });
+
+  // Saved thread sidebar
+  document.querySelectorAll('.ctx-item').forEach(function (item) {
+    item.addEventListener('click', function () {
+      document.querySelectorAll('.ctx-item').forEach(function (i) { i.classList.remove('is-active'); });
+      item.classList.add('is-active');
+      title.textContent = item.textContent.trim();
+      stream.innerHTML = '';
+      var key = THREADS[item.textContent.trim()];
+      var canned = matchCanned(key || item.textContent);
+      if (canned) {
+        appendMsg(canned.q, true);
+        setTimeout(function () {
+          var botEl = appendMsg('…', false);
+          setTimeout(function () {
+            typeIn(botEl, canned.a, function () { appendSources(canned.sources); });
+          }, 500);
+        }, 200);
+      } else {
+        appendMsg(item.textContent.trim(), true);
+        setTimeout(function () {
+          appendMsg('Loading conversation history…', false);
+        }, 300);
+      }
+    });
+  });
+
+  // SQL reveal — clicking any .zb-cite shows the query behind it
+  var SQL_MAP = {
+    'OrderCompleted': '<span class="sql-cm">-- orders contributing to GP calculation</span>\n<span class="sql-kw">SELECT</span> oi.product_id, p.name,\n  <span class="sql-fn">SUM</span>(oi.unit_price_cents * oi.quantity) <span class="sql-kw">AS</span> revenue_cents,\n  <span class="sql-fn">SUM</span>(r.cost_cents * oi.quantity)   <span class="sql-kw">AS</span> cogs_cents\n<span class="sql-kw">FROM</span> commerce.order_items oi\n<span class="sql-kw">JOIN</span> commerce.orders o  <span class="sql-kw">ON</span> o.id = oi.order_id\n<span class="sql-kw">JOIN</span> product.products p <span class="sql-kw">ON</span> p.id = oi.product_id\n<span class="sql-kw">JOIN</span> inventory.recipes r <span class="sql-kw">ON</span> r.product_id = oi.product_id\n<span class="sql-kw">WHERE</span> o.business_id = <span class="sql-fn">current_setting</span>(<span class="sql-str">\'app.current_tenant\'</span>)::uuid\n  <span class="sql-kw">AND</span> <span class="sql-fn">EXTRACT</span>(DOW <span class="sql-kw">FROM</span> o.created_at) = 5 <span class="sql-cm">-- Friday</span>\n  <span class="sql-kw">AND</span> o.created_at >= <span class="sql-fn">NOW</span>() - <span class="sql-str">\'56 days\'</span>::interval\n<span class="sql-kw">GROUP BY</span> oi.product_id, p.name\n<span class="sql-kw">ORDER BY</span> (revenue_cents - cogs_cents) / revenue_cents <span class="sql-kw">ASC</span>;',
+    'Recipe BOM': '<span class="sql-cm">-- bill of materials for food cost</span>\n<span class="sql-kw">SELECT</span> ri.ingredient_name, ri.quantity_g,\n  si.unit_cost_cents, ri.quantity_g * si.unit_cost_cents / 1000 <span class="sql-kw">AS</span> line_cost\n<span class="sql-kw">FROM</span> inventory.recipe_items ri\n<span class="sql-kw">JOIN</span> inventory.stock_items si <span class="sql-kw">ON</span> si.id = ri.stock_item_id\n<span class="sql-kw">WHERE</span> ri.recipe_id = <span class="sql-str">\'rigatoni-alla-genovese\'</span>\n  <span class="sql-kw">AND</span> si.business_id = <span class="sql-fn">current_setting</span>(<span class="sql-str">\'app.current_tenant\'</span>)::uuid;',
+    'SupplierInvoice': '<span class="sql-cm">-- supplier price change event log</span>\n<span class="sql-kw">SELECT</span> si.supplier_name, si.item_name,\n  si.old_unit_cost_cents, si.new_unit_cost_cents,\n  <span class="sql-fn">ROUND</span>((si.new_unit_cost_cents - si.old_unit_cost_cents)\n    / si.old_unit_cost_cents::numeric * 100, 1) <span class="sql-kw">AS</span> pct_change,\n  si.effective_at\n<span class="sql-kw">FROM</span> inventory.supplier_invoice_lines si\n<span class="sql-kw">WHERE</span> si.business_id = <span class="sql-fn">current_setting</span>(<span class="sql-str">\'app.current_tenant\'</span>)::uuid\n  <span class="sql-kw">AND</span> si.effective_at >= <span class="sql-str">\'2026-04-01\'</span>\n<span class="sql-kw">ORDER BY</span> si.effective_at <span class="sql-kw">DESC</span>;',
+    'ShiftStarted': '<span class="sql-cm">-- labour cost per shift with award loading</span>\n<span class="sql-kw">SELECT</span> u.name, ws.started_at, ws.ended_at,\n  <span class="sql-fn">EXTRACT</span>(EPOCH <span class="sql-kw">FROM</span> ws.ended_at - ws.started_at)/3600 <span class="sql-kw">AS</span> hours,\n  ar.loading_multiplier, u.base_hourly_cents,\n  u.base_hourly_cents * ar.loading_multiplier * hours / 100 <span class="sql-kw">AS</span> cost_dollars\n<span class="sql-kw">FROM</span> workforce.shifts ws\n<span class="sql-kw">JOIN</span> auth.users u <span class="sql-kw">ON</span> u.id = ws.staff_id\n<span class="sql-kw">JOIN</span> workforce.award_rules ar <span class="sql-kw">ON</span> ar.day_of_week = <span class="sql-fn">EXTRACT</span>(DOW <span class="sql-kw">FROM</span> ws.started_at)\n  <span class="sql-kw">AND</span> ar.award_code = <span class="sql-str">\'MA000119\'</span>\n<span class="sql-kw">WHERE</span> ws.business_id = <span class="sql-fn">current_setting</span>(<span class="sql-str">\'app.current_tenant\'</span>)::uuid\n  <span class="sql-kw">AND</span> ws.started_at >= <span class="sql-fn">NOW</span>() - <span class="sql-str">\'56 days\'</span>::interval;',
+    'BookingNoShow': '<span class="sql-cm">-- no-show rate by week</span>\n<span class="sql-kw">SELECT</span> <span class="sql-fn">DATE_TRUNC</span>(<span class="sql-str">\'week\'</span>, b.booked_for) <span class="sql-kw">AS</span> week,\n  <span class="sql-fn">COUNT</span>(*) <span class="sql-kw">FILTER</span> (<span class="sql-kw">WHERE</span> b.status = <span class="sql-str">\'no_show\'</span>) <span class="sql-kw">AS</span> no_shows,\n  <span class="sql-fn">COUNT</span>(*) <span class="sql-kw">AS</span> total_bookings,\n  <span class="sql-fn">ROUND</span>(<span class="sql-fn">COUNT</span>(*) <span class="sql-kw">FILTER</span> (<span class="sql-kw">WHERE</span> b.status = <span class="sql-str">\'no_show\'</span>)\n    * 100.0 / <span class="sql-fn">COUNT</span>(*), 1) <span class="sql-kw">AS</span> pct\n<span class="sql-kw">FROM</span> reservations.bookings b\n<span class="sql-kw">WHERE</span> b.business_id = <span class="sql-fn">current_setting</span>(<span class="sql-str">\'app.current_tenant\'</span>)::uuid\n  <span class="sql-kw">AND</span> b.booked_for >= <span class="sql-fn">NOW</span>() - <span class="sql-str">\'30 days\'</span>::interval\n<span class="sql-kw">GROUP BY</span> 1 <span class="sql-kw">ORDER BY</span> 1 <span class="sql-kw">DESC</span>;'
+  };
+
+  var popover = document.createElement('div');
+  popover.className = 'sql-popover';
+  popover.style.display = 'none';
+  document.body.appendChild(popover);
+
+  function showPopover(cite, e) {
+    var text = cite.textContent;
+    var sql = null;
+    for (var key in SQL_MAP) { if (text.indexOf(key) !== -1) { sql = SQL_MAP[key]; break; } }
+    if (!sql) return;
+    popover.innerHTML = '<div class="sql-popover__label">SQL · generated query · tenant-scoped via RLS</div>' + sql;
+    popover.style.display = 'block';
+    var x = Math.min(e.clientX, window.innerWidth - 580);
+    var y = e.clientY - popover.offsetHeight - 12;
+    if (y < 8) y = e.clientY + 16;
+    popover.style.left = Math.max(8, x) + 'px';
+    popover.style.top = y + 'px';
+  }
+
+  document.addEventListener('mouseover', function (e) {
+    var cite = e.target.closest('.zb-cite');
+    if (cite) showPopover(cite, e);
+    else popover.style.display = 'none';
+  });
+  document.addEventListener('mouseout', function (e) {
+    if (!e.target.closest('.zb-cite')) popover.style.display = 'none';
+  });
+
+  // Action buttons (reprice / sub brisket)
+  document.querySelector('.actions .zb-btn:first-child').addEventListener('click', function () {
+    respond('Model option a — reprice rigatoni to $32');
+    setTimeout(function () {
+      var botEl = appendMsg('…', false);
+      setTimeout(function () {
+        typeIn(botEl, 'At <span class="zb-cite">$32</span> rigatoni GP recovers to <span class="zb-cite">75.8%</span>. Based on price elasticity from your order history, expect ~1.8 fewer covers per Friday lunch — net revenue <strong style="color:var(--green-600)">+$47/service</strong>. I can update the menu price now, or draft a specials card first. Which?', null);
+      }, 600);
+    }, 500);
+  });
+
+  document.querySelector('.actions .zb-btn--primary').addEventListener('click', function () {
+    respond('Model option b — sub beef cheek with brisket');
+    setTimeout(function () {
+      var botEl = appendMsg('…', false);
+      setTimeout(function () {
+        typeIn(botEl, 'Brisket from Vic\'s Meats at <span class="zb-cite">$14.20/kg</span> vs cheek at <span class="zb-cite">$22.80/kg</span>. Recipe variant GP rises to <span class="zb-cite">73.4%</span> with no menu price change. Texture profile differs — recommend a 2-week staff-disclosed trial. Want me to draft the supplier PO and update the BOM?', null);
+      }, 600);
+    }, 500);
+  });
+})();
+</script>
+</body>
+</html>

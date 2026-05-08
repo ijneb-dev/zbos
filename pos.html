@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZBOS · Point of Sale</title>
+<link rel="stylesheet" href="./tokens.css" />
+<link rel="stylesheet" href="./shell.css" />
+<style>
+  .pos-grid { display: grid; grid-template-columns: 1fr 380px; gap: var(--space-6); }
+  .pos-products { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin-top: var(--space-4); }
+  .pos-product { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; }
+  .pos-product:hover { border-color: var(--blue-600); }
+  .pos-product__img { aspect-ratio: 4/3; background: var(--gray-100); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+  .pos-product__body { padding: var(--space-3); }
+  .pos-product__name { font-size: var(--text-sm); font-weight: var(--weight-medium); margin: 0; }
+  .pos-product__price { font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--space-1); }
+  .order-rail { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); display: flex; flex-direction: column; min-height: 600px; }
+  .order-rail__head { padding: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
+  .order-course { border-top: 1px solid var(--border-subtle); padding: var(--space-3) var(--space-4); }
+  .order-course:first-of-type { border-top: none; }
+  .order-course__head { display: flex; align-items: center; justify-content: space-between; font-size: var(--text-xs); text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 0.04em; margin-bottom: var(--space-2); }
+  .order-line { display: flex; justify-content: space-between; padding: var(--space-1) 0; font-size: var(--text-sm); }
+  .order-line__mods { color: var(--text-tertiary); font-size: var(--text-xs); margin-left: var(--space-2); }
+  .order-rail__totals { padding: var(--space-4); border-top: 1px solid var(--border-subtle); margin-top: auto; }
+  .order-rail__row { display: flex; justify-content: space-between; font-size: var(--text-sm); padding: var(--space-1) 0; }
+  .order-rail__total { font-weight: var(--weight-semibold); font-size: var(--text-base); }
+
+  /* ── Login overlay ───────────────────────────────────────────── */
+  .zb-login {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    display: flex; align-items: center; justify-content: center;
+    padding: var(--space-6);
+    transition: opacity 400ms ease;
+  }
+  .zb-login.is-hidden { opacity: 0; pointer-events: none; }
+  .zb-login__inner { width: 480px; max-width: 92vw; color: #fff; text-align: center; }
+  .zb-login__brand { display: inline-flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+  .zb-login__brand-mark { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
+  .zb-login__sub { color: rgba(255,255,255,0.6); font-size: 14px; margin: 8px 0 32px; }
+
+  .zb-login__tiles { display: flex; flex-direction: column; gap: 12px; }
+  .zb-login__tile {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    color: #fff; cursor: pointer;
+    text-align: left; font: inherit; font-size: 14px;
+    transition: background 150ms ease, transform 150ms ease, border-color 150ms ease;
+  }
+  .zb-login__tile:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); transform: translateY(-1px); }
+  .zb-login__tile:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
+
+  .zb-login__avatar {
+    width: 44px; height: 44px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 14px; color: #fff;
+    flex-shrink: 0;
+  }
+  .zb-login__avatar--blue   { background: #2563EB; }
+  .zb-login__avatar--green  { background: #16A34A; }
+  .zb-login__avatar--orange { background: #EA580C; }
+  .zb-login__avatar--lg { width: 56px; height: 56px; font-size: 16px; }
+
+  .zb-login__name { flex: 1; font-weight: 500; font-size: 15px; color: #fff; }
+  .zb-login__role-pill { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+  .zb-login__role-pill--blue   { background: rgba(37,99,235,0.16);  color: #93C5FD; }
+  .zb-login__role-pill--green  { background: rgba(22,163,74,0.18);  color: #86EFAC; }
+  .zb-login__role-pill--orange { background: rgba(234,88,12,0.18);  color: #FDBA74; }
+
+  .zb-login__pin { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .zb-login__pin-user { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .zb-login__dots { display: flex; gap: 16px; margin: 12px 0 20px; }
+  .zb-login__dot {
+    width: 16px; height: 16px; border-radius: 999px;
+    border: 2px solid rgba(255,255,255,0.3);
+    transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  }
+  .zb-login__dot.is-filled { background: #2563EB; border-color: #2563EB; transform: scale(1.05); }
+
+  .zb-login__keypad { display: grid; grid-template-columns: repeat(3, 64px); gap: 12px; justify-content: center; }
+  .zb-login__key {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #fff; font-size: 22px; font-weight: 500; font-family: var(--font-sans);
+    cursor: pointer;
+    transition: background 100ms ease, transform 80ms ease;
+  }
+  .zb-login__key:hover { background: rgba(255,255,255,0.12); }
+  .zb-login__key:active { background: rgba(255,255,255,0.2); transform: scale(0.96); }
+  .zb-login__key:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
+  .zb-login__key--bksp { font-size: 20px; }
+
+  .zb-login__back {
+    background: none; border: none; color: rgba(255,255,255,0.6);
+    cursor: pointer; font-size: 13px; margin-top: 16px; padding: 8px 12px;
+    font-family: var(--font-sans);
+  }
+  .zb-login__back:hover { color: #fff; }
+</style>
+</head>
+<body>
+<a href="#main" class="zb-skip">Skip to content</a>
+<div class="zb-app">
+
+  <div id="zb-login" class="zb-login" role="dialog" aria-modal="true" aria-labelledby="zb-login-title">
+    <div class="zb-login__inner">
+      <div class="zb-login__brand">
+        <span class="zb-login__brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="32" height="32" focusable="false" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="#2563EB"/>
+            <path d="M11 11 H21 L11 21 H21" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </span>
+        <span id="zb-login-title">ZBOS Platform</span>
+      </div>
+      <p class="zb-login__sub" data-step-sub="tiles">Select your profile to continue</p>
+
+      <div class="zb-login__tiles" data-step="tiles">
+        <button type="button" class="zb-login__tile" data-user="sarah" data-target="pos">
+          <span class="zb-login__avatar zb-login__avatar--blue" aria-hidden="true">SJ</span>
+          <span class="zb-login__name">Sarah Johnson</span>
+          <span class="zb-login__role-pill zb-login__role-pill--blue">Owner &amp; GM</span>
+        </button>
+        <button type="button" class="zb-login__tile" data-user="tom" data-target="pos">
+          <span class="zb-login__avatar zb-login__avatar--green" aria-hidden="true">TR</span>
+          <span class="zb-login__name">Tom Reilly</span>
+          <span class="zb-login__role-pill zb-login__role-pill--green">Floor Manager</span>
+        </button>
+        <button type="button" class="zb-login__tile" data-user="mauro" data-target="kds">
+          <span class="zb-login__avatar zb-login__avatar--orange" aria-hidden="true">MR</span>
+          <span class="zb-login__name">Mauro Rossi</span>
+          <span class="zb-login__role-pill zb-login__role-pill--orange">Head Chef</span>
+        </button>
+      </div>
+
+      <div class="zb-login__pin" data-step="pin" hidden>
+        <div class="zb-login__pin-user">
+          <span class="zb-login__avatar zb-login__avatar--lg zb-login__avatar--blue" data-pin-avatar aria-hidden="true">SJ</span>
+          <span class="zb-login__name" data-pin-name>Sarah Johnson</span>
+        </div>
+        <p class="zb-login__sub" style="margin: 0 0 4px;">Enter your 4-digit PIN</p>
+        <div class="zb-login__dots" role="status" aria-label="PIN entry progress">
+          <span class="zb-login__dot"></span>
+          <span class="zb-login__dot"></span>
+          <span class="zb-login__dot"></span>
+          <span class="zb-login__dot"></span>
+        </div>
+        <div class="zb-login__keypad" role="group" aria-label="PIN keypad">
+          <button type="button" class="zb-login__key" data-key="1">1</button>
+          <button type="button" class="zb-login__key" data-key="2">2</button>
+          <button type="button" class="zb-login__key" data-key="3">3</button>
+          <button type="button" class="zb-login__key" data-key="4">4</button>
+          <button type="button" class="zb-login__key" data-key="5">5</button>
+          <button type="button" class="zb-login__key" data-key="6">6</button>
+          <button type="button" class="zb-login__key" data-key="7">7</button>
+          <button type="button" class="zb-login__key" data-key="8">8</button>
+          <button type="button" class="zb-login__key" data-key="9">9</button>
+          <button type="button" class="zb-login__key" data-key="*" aria-label="Star">*</button>
+          <button type="button" class="zb-login__key" data-key="0">0</button>
+          <button type="button" class="zb-login__key zb-login__key--bksp" data-key="back" aria-label="Backspace">⌫</button>
+        </div>
+        <button type="button" class="zb-login__back" data-back>← Back to profiles</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="zb-topnav">
+    <div class="zb-topnav__logo"><span class="zb-topnav__logo-mark" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#2563EB;color:#fff;border-radius:6px;font-weight:700;line-height:1;" aria-hidden="true"><svg viewBox="0 0 28 28" width="28" height="28" focusable="false" aria-hidden="true"><rect width="28" height="28" rx="6" fill="#2563EB"/><path d="M9 9 H19 L9 19 H19" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span>ZBOS</span></div>
+    <button class="zb-tenant" type="button"><span class="zb-tenant__mark">S</span><span>Stagione · Surry Hills</span><span class="zb-tenant__caret" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><polyline points="6 9 12 15 18 9"/></svg></span></button>
+    <nav class="zb-topnav__items">
+      <button class="zb-topnav__item" onclick="location.href='dashboard.html'">Home</button>
+      <button class="zb-topnav__item is-active">Point of Sale</button>
+      <button class="zb-topnav__item" onclick="location.href='kds.html'">Kitchen Display</button>
+      <button class="zb-topnav__item" onclick="location.href='roster.html'">Team</button>
+      <button class="zb-topnav__item" onclick="location.href='insights.html'">Analytics</button>
+      <button class="zb-topnav__item">All Apps <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-left:4px;"><polyline points="6 9 12 15 18 9"/></svg></button>
+    </nav>
+    <div class="zb-topnav__right">
+      <button class="zb-iconbtn" aria-label="Search"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button>
+      <button class="zb-iconbtn" aria-label="Notifications"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="zb-iconbtn__dot"></span></button>
+      <button class="zb-iconbtn" aria-label="Settings"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div class="zb-user"><div class="zb-user__name-block"><span class="zb-user__name">Sarah Johnson</span><span class="zb-user__role">Owner & GM</span></div><span class="zb-avatar">SJ</span></div>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1" class="zb-page">
+    <div class="zb-page__header zb-row">
+      <div class="zb-grow">
+        <h1 class="zb-page__title">Point of Sale</h1>
+        <p class="zb-page__subtitle">Table 6 · Sarah · 2 guests · opened 6:42pm</p>
+      </div>
+      <button class="zb-btn">Hold</button>
+      <button class="zb-btn zb-btn--primary">Send to KDS</button>
+    </div>
+
+    <div class="pos-grid">
+      <div>
+        <div class="zb-search-row" style="margin-bottom: var(--space-3);">
+          <span style="color: var(--text-tertiary)" aria-hidden="true">⌕</span>
+          <label for="pos-search" class="zb-sr-only">Search items, modifiers, allergens</label>
+          <input id="pos-search" type="search" placeholder="Search items, modifiers, allergens…" />
+        </div>
+        <div class="zb-chips">
+          <button class="zb-chip is-active">All</button>
+          <button class="zb-chip">Antipasti</button>
+          <button class="zb-chip">Primi</button>
+          <button class="zb-chip">Secondi</button>
+          <button class="zb-chip">Dolci</button>
+          <button class="zb-chip">Beverages</button>
+        </div>
+
+        <div class="pos-products">
+          <div class="pos-product"><div class="pos-product__img">🧀</div><div class="pos-product__body"><p class="pos-product__name">Burrata</p><p class="pos-product__price">$22.00</p></div></div>
+          <div class="pos-product"><div class="pos-product__img">🥗</div><div class="pos-product__body"><p class="pos-product__name">Carpaccio</p><p class="pos-product__price">$26.00</p></div></div>
+          <div class="pos-product"><div class="pos-product__img">🍝</div><div class="pos-product__body"><p class="pos-product__name">Rigatoni alla genovese</p><p class="pos-product__price">$28.00 <span class="zb-pill zb-pill--warn" style="margin-left: var(--space-1)">low stock</span></p></div></div>
+          <div class="pos-product"><div class="pos-product__img">🍜</div><div class="pos-product__body"><p class="pos-product__name">Linguine alle vongole</p><p class="pos-product__price">$32.00</p></div></div>
+          <div class="pos-product"><div class="pos-product__img">🥩</div><div class="pos-product__body"><p class="pos-product__name">Bistecca</p><p class="pos-product__price">$48.00</p></div></div>
+          <div class="pos-product"><div class="pos-product__img">🐟</div><div class="pos-product__body"><p class="pos-product__name">Pesce del giorno</p><p class="pos-product__price">$42.00</p></div></div>
+          <div class="pos-product"><div class="pos-product__img">🍗</div><div class="pos-product__body"><p class="pos-product__name">Pollo alla milanese</p><p class="pos-product__price">$36.00</p></div></div>
+          <div class="pos-product"><div class="pos-product__img">🍰</div><div class="pos-product__body"><p class="pos-product__name">Tiramisù</p><p class="pos-product__price">$14.00</p></div></div>
+        </div>
+      </div>
+
+      <aside class="order-rail">
+        <div class="order-rail__head">
+          <div class="zb-row"><h3 class="zb-card__title zb-grow">Current Order</h3><span class="zb-pill zb-pill--brand">3 courses</span></div>
+        </div>
+
+        <div class="order-course">
+          <div class="order-course__head"><span>Course 1 · Antipasti</span><span class="zb-pill zb-pill--ok">fired</span></div>
+          <div class="order-line"><span>1× Burrata<br><span class="order-line__mods">+ prosciutto · no tomato</span></span><span>$26.00</span></div>
+        </div>
+        <div class="order-course">
+          <div class="order-course__head"><span>Course 2 · Primi</span><span class="zb-pill zb-pill--neutral">held · fire on bump</span></div>
+          <div class="order-line"><span>2× Rigatoni alla genovese</span><span>$56.00</span></div>
+        </div>
+        <div class="order-course">
+          <div class="order-course__head"><span>Course 3 · Secondi</span><span class="zb-pill zb-pill--neutral">queued</span></div>
+          <div class="order-line"><span>1× Bistecca<br><span class="order-line__mods">medium-rare</span></span><span>$48.00</span></div>
+        </div>
+
+        <div class="order-rail__totals">
+          <div class="order-rail__row"><span>Subtotal</span><span>$130.00</span></div>
+          <div class="order-rail__row"><span>GST included</span><span class="zb-muted">$11.82</span></div>
+          <div class="order-rail__row order-rail__total"><span>Total</span><span>$130.00</span></div>
+          <div style="margin-top: var(--space-3); display: flex; gap: var(--space-2);">
+            <button class="zb-btn zb-grow">Print bill</button>
+            <button class="zb-btn zb-btn--primary zb-grow">Pay</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────
+ * Demo wiring · 2026-05-08
+ * Loads real Stagione products from product service (3004), creates and
+ * fires real orders via commerce service (3003), shows toast with the
+ * client-generated correlation_id (echoed via X-Correlation-Id header).
+ * No structural / CSS / ARIA changes — JS-only DOM updates against the
+ * existing scaffold class names.
+ * ───────────────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  const COMMERCE = 'http://localhost:3003';
+  const PRODUCTS = 'http://localhost:3004';
+  const TOKEN = 'demo';
+
+  const productGrid = document.querySelector('.pos-products');
+  const orderRail = document.querySelector('.order-rail');
+  const sendBtn = Array.from(document.querySelectorAll('.zb-btn--primary')).find(
+    function (b) { return /Send to KDS/i.test(b.textContent || ''); }
+  );
+
+  /** @type {Array<{product_id:string,name:string,price_cents:number,quantity:number}>} */
+  const cart = [];
+
+  function authHeaders() {
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN };
+  }
+
+  function dollars(cents) {
+    return '$' + (Math.round(cents) / 100).toFixed(2);
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+
+  function emojiFor(p) {
+    const n = (p.name || '').toLowerCase();
+    if (/burrata|mozzarella|cheese/.test(n)) return '🧀';
+    if (/carpaccio|salad|insalata/.test(n)) return '🥗';
+    if (/rigatoni|pasta|spaghetti|gnocchi|ravioli/.test(n)) return '🍝';
+    if (/linguine|noodle|vongole/.test(n)) return '🍜';
+    if (/bistecca|steak|beef|osso/.test(n)) return '🥩';
+    if (/pesce|fish|branzino|salmon/.test(n)) return '🐟';
+    if (/pollo|chicken|milanese/.test(n)) return '🍗';
+    if (/tiramis|cake|dessert|gelato|panna/.test(n)) return '🍰';
+    if (/wine|beer|cocktail|drink|negroni|spritz/.test(n)) return '🍷';
+    if (/coffee|caffe|espresso|cappuccino/.test(n)) return '☕';
+    return '🍽️';
+  }
+
+  async function loadProducts() {
+    if (!productGrid) return;
+    productGrid.innerHTML = '<p class="zb-muted" style="grid-column:1/-1;padding:var(--space-4)">Loading menu…</p>';
+    try {
+      const r = await fetch(PRODUCTS + '/products', { headers: authHeaders() });
+      if (!r.ok) throw new Error('GET /products ' + r.status);
+      const json = await r.json();
+      const items = (json && Array.isArray(json.data)) ? json.data : [];
+      productGrid.innerHTML = '';
+      if (items.length === 0) {
+        productGrid.innerHTML = '<p class="zb-muted" style="grid-column:1/-1;padding:var(--space-4)">No products available.</p>';
+        return;
+      }
+      for (const p of items) {
+        const card = document.createElement('div');
+        card.className = 'pos-product';
+        card.dataset.productId = p.id;
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', 'Add ' + (p.name || 'item') + ' to order');
+        card.innerHTML =
+          '<div class="pos-product__img" aria-hidden="true">' + emojiFor(p) + '</div>' +
+          '<div class="pos-product__body">' +
+            '<p class="pos-product__name">' + escapeHtml(p.name) + '</p>' +
+            '<p class="pos-product__price">' + dollars(p.price_cents) + '</p>' +
+          '</div>';
+        const handler = function () { addToCart(p); };
+        card.addEventListener('click', handler);
+        card.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }
+        });
+        productGrid.appendChild(card);
+      }
+    } catch (e) {
+      productGrid.innerHTML = '<p style="grid-column:1/-1;padding:var(--space-4);color:var(--text-negative)">Failed to load products: ' + escapeHtml(e.message) + '</p>';
+    }
+  }
+
+  function addToCart(p) {
+    const existing = cart.find(function (it) { return it.product_id === p.id; });
+    if (existing) existing.quantity += 1;
+    else cart.push({ product_id: p.id, name: p.name, price_cents: p.price_cents, quantity: 1 });
+    renderCart();
+  }
+
+  function renderCart() {
+    if (!orderRail) return;
+    const head = orderRail.querySelector('.order-rail__head');
+    const totals = orderRail.querySelector('.order-rail__totals');
+    Array.from(orderRail.querySelectorAll('.order-course')).forEach(function (n) { n.remove(); });
+
+    const block = document.createElement('div');
+    block.className = 'order-course';
+    let html = '<div class="order-course__head"><span>Course 1 · Demo</span>';
+    if (cart.length === 0) {
+      html += '<span class="zb-pill zb-pill--neutral">empty</span></div>';
+      html += '<div class="order-line"><span class="zb-muted">Tap a product to add</span><span></span></div>';
+    } else {
+      html += '<span class="zb-pill zb-pill--brand">staged</span></div>';
+      for (const it of cart) {
+        html +=
+          '<div class="order-line">' +
+            '<span>' + it.quantity + '× ' + escapeHtml(it.name) + '</span>' +
+            '<span>' + dollars(it.price_cents * it.quantity) + '</span>' +
+          '</div>';
+      }
+    }
+    block.innerHTML = html;
+    if (head) head.after(block); else orderRail.insertBefore(block, totals);
+
+    const subtotal = cart.reduce(function (acc, it) { return acc + it.price_cents * it.quantity; }, 0);
+    if (totals) {
+      const rows = totals.querySelectorAll('.order-rail__row');
+      if (rows[0] && rows[0].lastElementChild) rows[0].lastElementChild.textContent = dollars(subtotal);
+      if (rows[2] && rows[2].lastElementChild) rows[2].lastElementChild.textContent = dollars(subtotal);
+    }
+
+    const courseCountPill = orderRail.querySelector('.order-rail__head .zb-pill');
+    if (courseCountPill) courseCountPill.textContent = cart.length === 0 ? '0 items' : cart.length + ' item' + (cart.length === 1 ? '' : 's');
+  }
+
+  function newCorrelationId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    // RFC 4122 v4 fallback.
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  async function fireOrder() {
+    if (!sendBtn) return;
+    if (cart.length === 0) { showToast('Cart is empty — tap a product first'); return; }
+
+    sendBtn.disabled = true;
+    const originalLabel = sendBtn.textContent;
+    sendBtn.textContent = 'Sending…';
+
+    const correlationId = newCorrelationId();
+    try {
+      const orderRes = await fetch(COMMERCE + '/orders', {
+        method: 'POST',
+        headers: Object.assign(authHeaders(), { 'X-Correlation-Id': correlationId }),
+        body: JSON.stringify({ channel: 'pos' }),
+      });
+      if (!orderRes.ok) throw new Error('POST /orders ' + orderRes.status);
+      const order = await orderRes.json();
+      if (!order || !order.id) throw new Error('order id missing in response');
+
+      const itemsRes = await fetch(COMMERCE + '/orders/' + order.id + '/items', {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          items: cart.map(function (it) {
+            return { product_id: it.product_id, quantity: it.quantity, course: 1 };
+          }),
+        }),
+      });
+      if (!itemsRes.ok) throw new Error('PUT /orders/:id/items ' + itemsRes.status);
+
+      const fireRes = await fetch(COMMERCE + '/orders/' + order.id + '/fire-course', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ course: 1 }),
+      });
+      if (!fireRes.ok) throw new Error('POST /orders/:id/fire-course ' + fireRes.status);
+
+      const ticket = correlationId.slice(0, 8);
+      showToast('Order fired — Ticket #' + ticket);
+      cart.length = 0;
+      renderCart();
+      setTimeout(function () { window.location.href = 'kds.html'; }, 2200);
+    } catch (e) {
+      showToast('Send failed: ' + (e && e.message ? e.message : 'unknown error'));
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.textContent = originalLabel;
+    }
+  }
+
+  function showToast(msg) {
+    let t = document.getElementById('zb-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'zb-toast';
+      t.setAttribute('role', 'status');
+      t.setAttribute('aria-live', 'polite');
+      t.style.cssText = [
+        'position:fixed', 'bottom:24px', 'left:50%',
+        'transform:translateX(-50%)',
+        'background:var(--gray-900)', 'color:var(--white)',
+        'padding:12px 20px', 'border-radius:6px',
+        'font-size:14px', 'font-family:var(--font-sans)',
+        'box-shadow:var(--shadow-lg)',
+        'z-index:500', 'opacity:0',
+        'transition:opacity 200ms ease',
+        'pointer-events:none',
+      ].join(';');
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    requestAnimationFrame(function () { t.style.opacity = '1'; });
+    if (t._tid) clearTimeout(t._tid);
+    t._tid = setTimeout(function () { t.style.opacity = '0'; }, 4000);
+  }
+
+  if (sendBtn) sendBtn.addEventListener('click', fireOrder);
+  document.addEventListener('DOMContentLoaded', function () {
+    renderCart();
+    loadProducts();
+  });
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    renderCart();
+    loadProducts();
+  }
+})();
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Login overlay · 2026-05-08
+ * Three profile tiles → 4-digit PIN pad → fade overlay → optional KDS redirect.
+ * No real auth — partner-demo affordance only. Any 4 digits accepted.
+ * ───────────────────────────────────────────────────────────────────────── */
+(function loginOverlay() {
+  'use strict';
+  const overlay = document.getElementById('zb-login');
+  if (!overlay) return;
+
+  const stepTiles = overlay.querySelector('[data-step="tiles"]');
+  const stepPin = overlay.querySelector('[data-step="pin"]');
+  const subEl = overlay.querySelector('[data-step-sub="tiles"]');
+  const dots = overlay.querySelectorAll('.zb-login__dot');
+  const pinAvatar = overlay.querySelector('[data-pin-avatar]');
+  const pinName = overlay.querySelector('[data-pin-name]');
+
+  const USERS = {
+    sarah: { name: 'Sarah Johnson', initials: 'SJ', avatarVariant: 'zb-login__avatar--blue', target: 'pos' },
+    tom:   { name: 'Tom Reilly',     initials: 'TR', avatarVariant: 'zb-login__avatar--green', target: 'pos' },
+    mauro: { name: 'Mauro Rossi',    initials: 'MR', avatarVariant: 'zb-login__avatar--orange', target: 'kds' },
+  };
+
+  let currentUser = null;
+  let pin = '';
+
+  function showStep(step) {
+    if (step === 'pin') {
+      stepTiles.hidden = true;
+      stepPin.hidden = false;
+      if (subEl) subEl.style.display = 'none';
+    } else {
+      stepTiles.hidden = false;
+      stepPin.hidden = true;
+      if (subEl) subEl.style.display = '';
+    }
+  }
+
+  function renderDots() {
+    dots.forEach(function (d, i) {
+      d.classList.toggle('is-filled', i < pin.length);
+    });
+  }
+
+  function chooseUser(userKey) {
+    const u = USERS[userKey];
+    if (!u) return;
+    currentUser = u;
+    pinAvatar.textContent = u.initials;
+    pinAvatar.className = 'zb-login__avatar zb-login__avatar--lg ' + u.avatarVariant;
+    pinName.textContent = u.name;
+    pin = '';
+    renderDots();
+    showStep('pin');
+  }
+
+  function pressKey(k) {
+    if (k === 'back') {
+      pin = pin.slice(0, -1);
+    } else if (k === '*') {
+      return; // demo: no-op
+    } else if (/^\d$/.test(k) && pin.length < 4) {
+      pin += k;
+    }
+    renderDots();
+    if (pin.length === 4) {
+      setTimeout(submit, 220);
+    }
+  }
+
+  function submit() {
+    if (!currentUser) return;
+    overlay.classList.add('is-hidden');
+    const target = currentUser.target;
+    setTimeout(function () {
+      overlay.style.display = 'none';
+      if (target === 'kds') {
+        window.location.href = 'kds.html';
+      }
+    }, 400);
+  }
+
+  overlay.querySelectorAll('.zb-login__tile').forEach(function (tile) {
+    tile.addEventListener('click', function () { chooseUser(tile.dataset.user); });
+  });
+  overlay.querySelectorAll('.zb-login__key').forEach(function (key) {
+    key.addEventListener('click', function () { pressKey(key.dataset.key); });
+  });
+  const backBtn = overlay.querySelector('[data-back]');
+  if (backBtn) {
+    backBtn.addEventListener('click', function () {
+      pin = '';
+      renderDots();
+      currentUser = null;
+      showStep('tiles');
+    });
+  }
+
+  // Keyboard support: digits go to PIN, Backspace deletes, Esc returns to tiles.
+  document.addEventListener('keydown', function (e) {
+    if (overlay.classList.contains('is-hidden')) return;
+    if (stepPin.hidden) return;
+    if (/^\d$/.test(e.key)) { pressKey(e.key); e.preventDefault(); }
+    else if (e.key === 'Backspace') { pressKey('back'); e.preventDefault(); }
+    else if (e.key === 'Escape') {
+      pin = '';
+      renderDots();
+      currentUser = null;
+      showStep('tiles');
+    }
+  });
+})();
+</script>
+</body>
+</html>

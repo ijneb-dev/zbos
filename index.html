@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZBOS · Scaffold index</title>
+<link rel="stylesheet" href="./tokens.css" />
+<link rel="stylesheet" href="./shell.css" />
+<style>
+  .scaffold-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4); }
+  .scaffold-card { display: block; padding: var(--space-5); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); background: var(--surface-card); text-decoration: none; color: inherit; }
+  .scaffold-card:hover { border-color: var(--blue-600); text-decoration: none; }
+  .scaffold-card h3 { margin: 0 0 var(--space-1); font-size: var(--text-base); }
+  .scaffold-card p  { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
+  .scaffold-card span { font-size: var(--text-xs); color: var(--text-tertiary); display: block; margin-top: var(--space-2); }
+</style>
+</head>
+<body>
+<a href="#main" class="zb-skip">Skip to content</a>
+<div class="zb-app">
+  <header class="zb-topnav">
+    <div class="zb-topnav__logo">
+      <span class="zb-topnav__logo-mark" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#2563EB;color:#fff;border-radius:6px;font-weight:700;line-height:1;" aria-hidden="true"><svg viewBox="0 0 28 28" width="28" height="28" focusable="false" aria-hidden="true"><rect width="28" height="28" rx="6" fill="#2563EB"/><path d="M9 9 H19 L9 19 H19" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>
+      <span>ZBOS</span>
+      <span class="zb-pill zb-pill--neutral" style="margin-left: var(--space-2)">scaffold</span>
+    </div>
+    <div class="zb-grow"></div>
+    <span class="zb-muted zb-tiny">Phase 0 · wireframe shells · no JS</span>
+  </header>
+
+  <main id="main" tabindex="-1" class="zb-page">
+    <div class="zb-page__header">
+      <h1 class="zb-page__title">UI Scaffold Index</h1>
+      <p class="zb-page__subtitle">Static HTML shells for the May 18 demo storyboard. Tokens canonical at <code>apps/web/src/styles/tokens.css</code>.</p>
+    </div>
+
+    <div class="scaffold-grid">
+      <a class="scaffold-card" href="./dashboard.html">
+        <h3>Dashboard / Daily Briefing</h3>
+        <p>KPI strip, Quick Access tiles, AI Copilot briefing card with 4 grounded items.</p>
+        <span>Storyboard frame 2</span>
+      </a>
+      <a class="scaffold-card" href="./pos.html">
+        <h3>Point of Sale</h3>
+        <p>Category chips, product grid, Current Order rail with course timing.</p>
+        <span>Storyboard frame 3</span>
+      </a>
+      <a class="scaffold-card" href="./kds.html">
+        <h3>Kitchen Display</h3>
+        <p>Dark-theme tickets · status colour-coding · bump bar. Reads at 3 metres.</p>
+        <span>Storyboard frame 4</span>
+      </a>
+      <a class="scaffold-card" href="./roster.html">
+        <h3>Roster</h3>
+        <p>Week grid, drag-drop placeholder, AU Modern Award penalty preview drawer.</p>
+        <span>Storyboard frame 5</span>
+      </a>
+      <a class="scaffold-card" href="./inventory.html">
+        <h3>Inventory</h3>
+        <p>Recipe cost preview, GP%, low-stock auto-flag, one-tap PO.</p>
+        <span>Storyboard frame 6</span>
+      </a>
+      <a class="scaffold-card" href="./insights.html">
+        <h3>Insights / Copilot</h3>
+        <p>Grounded answer surface with citations. Tenzo-MCP pattern, native.</p>
+        <span>Storyboard frame 7</span>
+      </a>
+      <a class="scaffold-card" href="./components.html">
+        <h3>Components</h3>
+        <p>Top-Nav, Side-Nav, Tenant-Switcher in isolation.</p>
+        <span>Brief deliverable G</span>
+      </a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

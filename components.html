@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZBOS · Components</title>
+<link rel="stylesheet" href="./tokens.css" />
+<link rel="stylesheet" href="./shell.css" />
+<style>
+  .demo-section { margin-bottom: var(--space-12); }
+  .demo-section h2 { font-size: var(--text-xl); margin: 0 0 var(--space-2); }
+  .demo-section .demo-note { color: var(--text-secondary); font-size: var(--text-sm); margin: 0 0 var(--space-4); }
+  .demo-stage { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); padding: var(--space-5); position: relative; overflow: visible; }
+  .demo-stage--flush { padding: 0; overflow: hidden; }
+  .demo-row { display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: flex-start; }
+  .swatch { width: 64px; height: 64px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+  .swatch-label { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: var(--space-1); }
+  .swatch-block { display: flex; flex-direction: column; align-items: center; }
+</style>
+</head>
+<body>
+<a href="#main" class="zb-skip">Skip to content</a>
+<div class="zb-app">
+  <header class="zb-topnav">
+    <div class="zb-topnav__logo"><span class="zb-topnav__logo-mark" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#2563EB;color:#fff;border-radius:6px;font-weight:700;line-height:1;" aria-hidden="true"><svg viewBox="0 0 28 28" width="28" height="28" focusable="false" aria-hidden="true"><rect width="28" height="28" rx="6" fill="#2563EB"/><path d="M9 9 H19 L9 19 H19" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span>ZBOS</span></div>
+    <div class="zb-grow"></div>
+    <a class="zb-btn" href="./index.html">← Scaffold index</a>
+  </header>
+
+  <main id="main" tabindex="-1" class="zb-page">
+    <div class="zb-page__header">
+      <h1 class="zb-page__title">Components</h1>
+      <p class="zb-page__subtitle">Top-Nav · Side-Nav · Tenant-Switcher · primitives in isolation. Lane G deliverable.</p>
+    </div>
+
+    <!-- ── Top Nav ─────────────────────────────────────────── -->
+    <section class="demo-section">
+      <h2>Top Nav</h2>
+      <p class="demo-note">Sticky · 56px · always visible. Logo + tenant pill + 4 pinned apps + All-Apps drawer + search/notify/settings + user.</p>
+      <div class="demo-stage demo-stage--flush">
+        <header class="zb-topnav" style="position: relative">
+          <div class="zb-topnav__logo"><span class="zb-topnav__logo-mark" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#2563EB;color:#fff;border-radius:6px;font-weight:700;line-height:1;" aria-hidden="true"><svg viewBox="0 0 28 28" width="28" height="28" focusable="false" aria-hidden="true"><rect width="28" height="28" rx="6" fill="#2563EB"/><path d="M9 9 H19 L9 19 H19" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span>ZBOS</span></div>
+          <button class="zb-tenant"><span class="zb-tenant__mark">S</span><span>Stagione · Surry Hills</span><span class="zb-tenant__caret">▾</span></button>
+          <nav class="zb-topnav__items">
+            <button class="zb-topnav__item is-active">Home</button>
+            <button class="zb-topnav__item">Point of Sale</button>
+            <button class="zb-topnav__item">Kitchen Display</button>
+            <button class="zb-topnav__item">Team</button>
+            <button class="zb-topnav__item">Analytics</button>
+            <button class="zb-topnav__item">All Apps ▾</button>
+          </nav>
+          <div class="zb-topnav__right">
+            <button class="zb-iconbtn" aria-label="Search"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button>
+            <button class="zb-iconbtn" aria-label="Notifications"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="zb-iconbtn__dot"></span></button>
+            <button class="zb-iconbtn" aria-label="Settings"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+            <div class="zb-user"><div class="zb-user__name-block"><span class="zb-user__name">Sarah Johnson</span><span class="zb-user__role">Owner & GM</span></div><span class="zb-avatar">SJ</span></div>
+          </div>
+        </header>
+      </div>
+    </section>
+
+    <!-- ── Side Nav ────────────────────────────────────────── -->
+    <section class="demo-section">
+      <h2>Side Nav</h2>
+      <p class="demo-note">Used in the Admin app and on narrow viewports. Grouped by app domain. Active = blue tint.</p>
+      <div class="demo-stage" style="padding: 0; display: flex; min-height: 480px;">
+        <aside class="zb-sidenav">
+          <span class="zb-sidenav__group">Core operations</span>
+          <a class="zb-sidenav__item" href="#"><span class="zb-sidenav__icon">⌂</span> Home</a>
+          <a class="zb-sidenav__item is-active" href="#"><span class="zb-sidenav__icon">🛒</span> Point of Sale</a>
+          <a class="zb-sidenav__item" href="#"><span class="zb-sidenav__icon">🍽️</span> Kitchen Display</a>
+          <a class="zb-sidenav__item" href="#"><span class="zb-sidenav__icon">📅</span> Reservations</a>
+
+          <span class="zb-sidenav__group">Menu & catalog</span>
+          <a class="zb-sidenav__item" href="#"><span class="zb-sidenav__icon">📄</span> Menu</a>
+          <a class="zb-sidenav__item" href="#"><span class="zb-sidenav__icon">📦</span> Inventory</a>
+
+          <span class="zb-sidenav__group">Workforce</span>
+          <a class="zb-sidenav__item" href="#"><span class="zb-sidenav__icon">👥</span> Team</a>
+          <a class="zb-sidenav__item" href="#"><span class="zb-sidenav__icon">📆</span> Roster</a>
+
+          <span class="zb-sidenav__group">Reporting & finance</span>
+          <a class="zb-sidenav__item" href="#"><span class="zb-sidenav__icon">📈</span> Analytics</a>
+          <a class="zb-sidenav__item" href="#"><span class="zb-sidenav__icon">🤖</span> AI Copilot</a>
+          <a class="zb-sidenav__item" href="#"><span class="zb-sidenav__icon">💳</span> Payments <span class="zb-pill zb-pill--neutral" style="margin-left: auto">soon</span></a>
+        </aside>
+        <div style="padding: var(--space-6); flex: 1;">
+          <p class="zb-muted">Side-Nav demonstrates the same routing surface as the Top-Nav. Persistence is local to viewport — Top-Nav is canonical for the GM web app, Side-Nav is canonical for the Admin app.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Tenant Switcher ─────────────────────────────────── -->
+    <section class="demo-section">
+      <h2>Tenant Switcher</h2>
+      <p class="demo-note">Single venue today (Stagione · Surry Hills). Drop-down opens cross-venue list when the operator runs more than one site. Switching reloads RBAC + session-tenant context.</p>
+      <div class="demo-stage" style="display: flex; gap: var(--space-12); align-items: flex-start;">
+        <div>
+          <p class="zb-tiny zb-muted" style="margin-bottom: var(--space-2)">Closed</p>
+          <div style="position: relative">
+            <button class="zb-tenant"><span class="zb-tenant__mark">S</span><span>Stagione · Surry Hills</span><span class="zb-tenant__caret">▾</span></button>
+          </div>
+        </div>
+
+        <div>
+          <p class="zb-tiny zb-muted" style="margin-bottom: var(--space-2)">Open · multi-venue</p>
+          <div style="position: relative; min-height: 320px;">
+            <button class="zb-tenant" style="border-color: var(--blue-600)"><span class="zb-tenant__mark">S</span><span>Stagione · Surry Hills</span><span class="zb-tenant__caret">▴</span></button>
+            <div class="zb-tenant-menu" style="position: static; margin-top: var(--space-2)">
+              <div class="zb-tenant-menu__item is-current">
+                <span class="zb-tenant__mark">S</span>
+                <div class="zb-grow">
+                  <div class="zb-tenant-menu__name">Stagione · Surry Hills</div>
+                  <div class="zb-tenant-menu__loc">357 Crown St · open · 142 covers tonight</div>
+                </div>
+                <span class="zb-pill zb-pill--brand">current</span>
+              </div>
+              <div class="zb-tenant-menu__item">
+                <span class="zb-tenant__mark">S</span>
+                <div class="zb-grow">
+                  <div class="zb-tenant-menu__name">Stagione · Bondi <span class="zb-pill zb-pill--neutral">+2 wk</span></div>
+                  <div class="zb-tenant-menu__loc">Hall St · launching June 1, 2026</div>
+                </div>
+              </div>
+              <div class="zb-tenant-menu__divider"></div>
+              <div class="zb-tenant-menu__cta">+ Add another venue</div>
+              <div class="zb-tenant-menu__cta">⚙ Manage venues</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Buttons / Pills / Chips ──────────────────────────── -->
+    <section class="demo-section">
+      <h2>Primitives</h2>
+      <p class="demo-note">Buttons · pills · chips · KPI tile.</p>
+
+      <div class="demo-stage zb-stack">
+        <div class="demo-row">
+          <button class="zb-btn">Default</button>
+          <button class="zb-btn zb-btn--primary">Primary</button>
+          <button class="zb-btn zb-btn--ghost">Ghost</button>
+          <button class="zb-btn zb-btn--danger">Destructive</button>
+          <button class="zb-btn zb-btn--lg zb-btn--primary">Large primary</button>
+        </div>
+
+        <div class="demo-row">
+          <span class="zb-pill zb-pill--neutral">neutral</span>
+          <span class="zb-pill zb-pill--brand">brand</span>
+          <span class="zb-pill zb-pill--ok">on track</span>
+          <span class="zb-pill zb-pill--warn">warn</span>
+          <span class="zb-pill zb-pill--bad">overdue</span>
+        </div>
+
+        <div class="zb-chips">
+          <button class="zb-chip is-active">All</button>
+          <button class="zb-chip">Antipasti</button>
+          <button class="zb-chip">Primi</button>
+          <button class="zb-chip">Secondi</button>
+          <button class="zb-chip">Dolci</button>
+        </div>
+
+        <div class="zb-kpi-row" style="grid-template-columns: repeat(4, minmax(180px, 1fr))">
+          <div class="zb-kpi"><div class="zb-kpi__label">Today's Sales</div><div class="zb-kpi__value">$3,245</div><div class="zb-kpi__delta is-pos">+12%</div></div>
+          <div class="zb-kpi"><div class="zb-kpi__label">Covers</div><div class="zb-kpi__value">142</div><div class="zb-kpi__delta is-pos">+8%</div></div>
+          <div class="zb-kpi"><div class="zb-kpi__label">Avg Check</div><div class="zb-kpi__value">$22.85</div></div>
+          <div class="zb-kpi"><div class="zb-kpi__label">Staff On Duty</div><div class="zb-kpi__value">8</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Palette ──────────────────────────────────────────── -->
+    <section class="demo-section">
+      <h2>Palette</h2>
+      <p class="demo-note">Primary · neutrals · status. Blue 600 = CTA / active. Status colours used sparingly.</p>
+      <div class="demo-stage demo-row">
+        <div class="swatch-block"><div class="swatch" style="background: var(--blue-600)"></div><span class="swatch-label">blue-600</span></div>
+        <div class="swatch-block"><div class="swatch" style="background: var(--blue-700)"></div><span class="swatch-label">blue-700</span></div>
+        <div class="swatch-block"><div class="swatch" style="background: var(--gray-900)"></div><span class="swatch-label">gray-900</span></div>
+        <div class="swatch-block"><div class="swatch" style="background: var(--gray-600)"></div><span class="swatch-label">gray-600</span></div>
+        <div class="swatch-block"><div class="swatch" style="background: var(--gray-200)"></div><span class="swatch-label">gray-200</span></div>
+        <div class="swatch-block"><div class="swatch" style="background: var(--gray-50)"></div><span class="swatch-label">gray-50</span></div>
+        <div class="swatch-block"><div class="swatch" style="background: var(--green-500)"></div><span class="swatch-label">green-500</span></div>
+        <div class="swatch-block"><div class="swatch" style="background: var(--orange-500)"></div><span class="swatch-label">orange-500</span></div>
+        <div class="swatch-block"><div class="swatch" style="background: var(--red-500)"></div><span class="swatch-label">red-500</span></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

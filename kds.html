@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZBOS · Kitchen Display</title>
+<link rel="stylesheet" href="./tokens.css" />
+<link rel="stylesheet" href="./shell.css" />
+<style>
+  body { background: var(--kds-bg); color: var(--kds-text-primary); }
+  .kds-topbar { background: var(--kds-card); border-bottom: 1px solid var(--kds-card-border); }
+  .kds-topbar .zb-topnav__item { color: var(--kds-text-secondary); }
+  .kds-topbar .zb-topnav__item.is-active { background: #1F2937; color: var(--kds-text-primary); border-color: var(--kds-card-border); }
+  .kds-topbar .zb-tenant { background: var(--kds-card); border-color: var(--kds-card-border); color: var(--kds-text-primary); }
+  .kds-topbar .zb-tenant__caret { color: var(--kds-text-secondary); }
+  .kds-topbar .zb-iconbtn { color: var(--kds-text-secondary); }
+  .kds-topbar .zb-iconbtn:hover { background: #1F2937; color: var(--kds-text-primary); }
+  .kds-topbar .zb-user__role, .kds-topbar .zb-user__name { color: var(--kds-text-primary); }
+
+  .kds-bar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-6); }
+  .kds-stations { display: inline-flex; gap: var(--space-2); }
+  .kds-station {
+    padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill);
+    background: #1F2937; color: var(--kds-text-secondary); font-size: var(--text-sm); cursor: pointer;
+    border: 1px solid var(--kds-card-border);
+  }
+  .kds-station.is-active { background: var(--blue-600); color: var(--white); border-color: var(--blue-600); }
+  .kds-clock { font-family: var(--font-mono); font-size: var(--text-2xl); font-weight: var(--weight-semibold); }
+
+  .kds-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); padding: 0 var(--space-6) var(--space-6); }
+
+  .kds-ticket {
+    background: var(--kds-card);
+    border: 2px solid var(--kds-card-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .kds-ticket--ontrack  { border-color: var(--kds-status-ontrack); }
+  .kds-ticket--warn     { border-color: var(--kds-status-warn); }
+  .kds-ticket--overdue  { border-color: var(--kds-status-overdue); }
+
+  .kds-ticket__head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    color: var(--white);
+  }
+  .kds-ticket--ontrack  .kds-ticket__head { background: var(--green-600); }
+  .kds-ticket--warn     .kds-ticket__head { background: var(--orange-600); }
+  .kds-ticket--overdue  .kds-ticket__head { background: var(--red-600); }
+
+  .kds-ticket__num { font-size: var(--text-4xl); font-weight: var(--weight-bold); line-height: 1; }
+  .kds-ticket__meta { text-align: right; font-size: var(--text-xs); }
+  .kds-ticket__meta strong { display: block; font-size: var(--text-sm); }
+
+  .kds-ticket__sub {
+    display: flex; justify-content: space-between;
+    padding: var(--space-2) var(--space-4);
+    background: rgba(0,0,0,0.2); font-size: var(--text-xs); color: var(--kds-text-secondary);
+  }
+
+  .kds-line { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--kds-card-border); }
+  .kds-line__row { display: flex; justify-content: space-between; align-items: baseline; }
+  .kds-line__name { font-size: var(--text-base); font-weight: var(--weight-medium); }
+  .kds-line__qty { color: var(--kds-text-secondary); font-family: var(--font-mono); }
+  .kds-line__mod { font-size: var(--text-xs); color: var(--kds-text-secondary); margin-top: var(--space-1); }
+  .kds-line__allergen { color: var(--orange-500); font-weight: var(--weight-semibold); }
+  .kds-line__status { font-size: var(--text-xs); color: var(--kds-status-ontrack); margin-top: var(--space-1); }
+
+  .kds-cta {
+    margin-top: auto;
+    padding: var(--space-3) var(--space-4);
+    border: none;
+    color: var(--white); font-weight: var(--weight-semibold); font-size: var(--text-base);
+    cursor: pointer;
+  }
+  .kds-cta--bump { background: var(--green-600); }
+  .kds-cta--start { background: var(--blue-600); }
+  .kds-cta--fire { background: var(--orange-600); }
+
+  .kds-courseline {
+    padding: var(--space-2) var(--space-4); font-size: var(--text-xs);
+    color: var(--kds-text-secondary); background: rgba(0,0,0,0.25);
+  }
+</style>
+</head>
+<body>
+<a href="#main" class="zb-skip">Skip to content</a>
+<div class="zb-app">
+  <header class="zb-topnav kds-topbar">
+    <div class="zb-topnav__logo" style="color: var(--white)"><span class="zb-topnav__logo-mark" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#2563EB;color:#fff;border-radius:6px;font-weight:700;line-height:1;" aria-hidden="true"><svg viewBox="0 0 28 28" width="28" height="28" focusable="false" aria-hidden="true"><rect width="28" height="28" rx="6" fill="#2563EB"/><path d="M9 9 H19 L9 19 H19" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span>ZBOS</span></div>
+    <button class="zb-tenant"><span class="zb-tenant__mark">S</span><span>Stagione · Surry Hills</span><span class="zb-tenant__caret" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><polyline points="6 9 12 15 18 9"/></svg></span></button>
+    <nav class="zb-topnav__items">
+      <button class="zb-topnav__item">Home</button>
+      <button class="zb-topnav__item">Point of Sale</button>
+      <button class="zb-topnav__item is-active">Kitchen Display</button>
+      <button class="zb-topnav__item">Team</button>
+      <button class="zb-topnav__item">Analytics</button>
+      <button class="zb-topnav__item">All Apps <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-left:4px;"><polyline points="6 9 12 15 18 9"/></svg></button>
+    </nav>
+    <div class="zb-topnav__right">
+      <button class="zb-iconbtn" aria-label="Search"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button>
+      <button class="zb-iconbtn" aria-label="Notifications"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="zb-iconbtn__dot"></span></button>
+      <button class="zb-iconbtn" aria-label="Settings"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div class="zb-user"><div class="zb-user__name-block"><span class="zb-user__name">Mauro R.</span><span class="zb-user__role" style="color: var(--kds-text-secondary)">Head Chef</span></div><span class="zb-avatar">MR</span></div>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1" style="flex: 1; display: flex; flex-direction: column;">
+  <div class="kds-bar">
+    <div class="kds-stations">
+      <button class="kds-station is-active">All Stations</button>
+      <button class="kds-station">Grill · 4</button>
+      <button class="kds-station">Pasta · 6</button>
+      <button class="kds-station">Salad · 2</button>
+      <button class="kds-station">Pastry · 1</button>
+    </div>
+    <div class="zb-grow"></div>
+    <span class="zb-tiny" style="color: var(--kds-text-secondary)">Current time</span>
+    <span class="kds-clock">19:55</span>
+  </div>
+
+  <div class="kds-grid">
+
+    <article class="kds-ticket kds-ticket--ontrack">
+      <header class="kds-ticket__head">
+        <div><span class="kds-ticket__num">#42</span><div style="font-size: var(--text-xs); margin-top: var(--space-1)">Table 5 · Alex T.</div></div>
+        <div class="kds-ticket__meta"><strong>5 min</strong>fired · on track</div>
+      </header>
+      <div class="kds-ticket__sub"><span>Course 1 of 2 firing</span><span>corr · 7e1c…</span></div>
+      <div class="kds-line">
+        <div class="kds-line__row"><span class="kds-line__name">Steak · medium-rare</span><span class="kds-line__qty">2×</span></div>
+        <div class="kds-line__mod">side: Fries</div>
+        <div class="kds-line__status">● Fired 19:50</div>
+      </div>
+      <div class="kds-line">
+        <div class="kds-line__row"><span class="kds-line__name">Garden Salad · no dressing</span><span class="kds-line__qty">1×</span></div>
+        <div class="kds-line__status">● Fired 19:50</div>
+      </div>
+      <button class="kds-cta kds-cta--bump">✓ Bump (Complete)</button>
+    </article>
+
+    <article class="kds-ticket kds-ticket--warn">
+      <header class="kds-ticket__head">
+        <div><span class="kds-ticket__num">#43</span><div style="font-size: var(--text-xs); margin-top: var(--space-1)">Table 12 · Emma W.</div></div>
+        <div class="kds-ticket__meta"><strong>7 min</strong>warn · 2 over</div>
+      </header>
+      <div class="kds-ticket__sub"><span>Course 1 of 1</span><span>corr · b3a2…</span></div>
+      <div class="kds-line">
+        <div class="kds-line__row"><span class="kds-line__name">Burger</span><span class="kds-line__qty">1×</span></div>
+        <div class="kds-line__mod"><span class="kds-line__allergen">⚠ ALLERGEN: Gluten</span></div>
+      </div>
+      <div class="kds-line">
+        <div class="kds-line__row"><span class="kds-line__name">Onion Rings</span><span class="kds-line__qty">1×</span></div>
+      </div>
+      <button class="kds-cta kds-cta--start">▶ Start Order</button>
+    </article>
+
+    <article class="kds-ticket kds-ticket--overdue">
+      <header class="kds-ticket__head">
+        <div><span class="kds-ticket__num">#44</span><div style="font-size: var(--text-xs); margin-top: var(--space-1)">Table 8 · Michael B.</div></div>
+        <div class="kds-ticket__meta"><strong>11 min</strong>overdue</div>
+      </header>
+      <div class="kds-ticket__sub"><span>Course 1 of 2</span><span>corr · 5fce…</span></div>
+      <div class="kds-line">
+        <div class="kds-line__row"><span class="kds-line__name">Chicken Pasta</span><span class="kds-line__qty">2×</span></div>
+        <div class="kds-line__status" style="color: var(--kds-status-overdue)">● Plated 19:45</div>
+      </div>
+      <div class="kds-line">
+        <div class="kds-line__row"><span class="kds-line__name">Caesar Salad</span><span class="kds-line__qty">1×</span></div>
+        <div class="kds-line__status" style="color: var(--kds-status-overdue)">● Plated 19:46</div>
+      </div>
+      <div class="kds-line">
+        <div class="kds-line__row"><span class="kds-line__name">Tiramisù · pastry</span><span class="kds-line__qty">1×</span></div>
+      </div>
+      <button class="kds-cta kds-cta--fire">🔥 Fire</button>
+      <div class="kds-courseline">Fire all items to complete</div>
+    </article>
+
+    <article class="kds-ticket kds-ticket--ontrack">
+      <header class="kds-ticket__head">
+        <div><span class="kds-ticket__num">#46</span><div style="font-size: var(--text-xs); margin-top: var(--space-1)">Table 6 · Sarah J.</div></div>
+        <div class="kds-ticket__meta"><strong>30 sec</strong>just landed</div>
+      </header>
+      <div class="kds-ticket__sub"><span>Course 1 of 3 · fire on bump</span><span>corr · 9a07…</span></div>
+      <div class="kds-line">
+        <div class="kds-line__row"><span class="kds-line__name">Burrata</span><span class="kds-line__qty">1×</span></div>
+        <div class="kds-line__mod">+ prosciutto · no tomato</div>
+        <div class="kds-line__status">● Fired 19:55</div>
+      </div>
+      <div class="kds-courseline">↓ Course 2 · 2× Rigatoni — held until course 1 bump</div>
+      <div class="kds-courseline">↓ Course 3 · 1× Bistecca medium-rare — queued</div>
+      <button class="kds-cta kds-cta--bump">✓ Bump (Complete)</button>
+    </article>
+
+  </div>
+  </main>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────
+ * Demo wiring · 2026-05-08
+ * Loads active KDS tickets from commerce service (3003), polls every 10s,
+ * fades a ticket out when bumped (one POST /kds/items/:id/bump per item).
+ * No structural / CSS / ARIA changes — JS-only DOM updates against the
+ * existing scaffold class names.
+ * ───────────────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  const COMMERCE = 'http://localhost:3003';
+  const TOKEN = 'demo';
+  const POLL_MS = 10000;
+
+  const grid = document.querySelector('.kds-grid');
+  const clockEl = document.querySelector('.kds-clock');
+
+  function authHeaders() {
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN };
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+
+  function elapsedMin(iso) {
+    if (!iso) return null;
+    const t = new Date(iso).getTime();
+    if (!t || Number.isNaN(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / 60000));
+  }
+
+  function statusClass(min) {
+    if (min == null) return 'kds-ticket--ontrack';
+    if (min >= 10) return 'kds-ticket--overdue';
+    if (min >= 6) return 'kds-ticket--warn';
+    return 'kds-ticket--ontrack';
+  }
+
+  function statusLabel(min) {
+    if (min == null) return 'fired';
+    if (min >= 10) return 'overdue';
+    if (min >= 6) return 'warn · 2 over';
+    return 'on track';
+  }
+
+  function formatClock(d) {
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return hh + ':' + mm;
+  }
+
+  /** Tracks order_ids of tickets currently fading out so polls don't restore them. */
+  const fading = new Set();
+
+  async function loadKds() {
+    if (!grid) return;
+    let res;
+    try {
+      res = await fetch(COMMERCE + '/kds/active', { headers: authHeaders() });
+    } catch (e) {
+      grid.dataset.offline = '1';
+      return;
+    }
+    delete grid.dataset.offline;
+    if (!res.ok) return;
+    const tickets = await res.json();
+    if (!Array.isArray(tickets)) return;
+
+    const visible = tickets.filter(function (t) { return !fading.has(ticketKey(t)); });
+    const newKey = visible.map(function (t) {
+      const ids = (t.items || []).map(function (i) { return i.id; }).join(',');
+      return t.order_id + ':' + (t.course == null ? '_' : t.course) + ':' + ids;
+    }).sort().join('|');
+    if (grid.dataset.key === newKey) return;
+    grid.dataset.key = newKey;
+
+    grid.innerHTML = '';
+    if (visible.length === 0) {
+      const empty = document.createElement('p');
+      empty.style.cssText = 'color:var(--kds-text-secondary);grid-column:1/-1;text-align:center;padding:48px;font-size:var(--text-base);';
+      empty.textContent = 'No active tickets — fire an order from POS to see it here.';
+      grid.appendChild(empty);
+      return;
+    }
+    for (const t of visible) {
+      grid.appendChild(renderTicket(t));
+    }
+  }
+
+  function ticketKey(t) {
+    return (t.order_id || '') + ':' + (t.course == null ? '_' : t.course);
+  }
+
+  function renderTicket(t) {
+    const min = elapsedMin(t.sent_at);
+    const cls = statusClass(min);
+    const article = document.createElement('article');
+    article.className = 'kds-ticket ' + cls;
+    article.dataset.orderId = t.order_id || '';
+    article.dataset.ticketKey = ticketKey(t);
+
+    const num = (t.order_id || '').slice(0, 4).toUpperCase();
+    const corr = (t.order_id || '').slice(0, 8);
+    const tableLabel = t.table_label ? escapeHtml(t.table_label) : '—';
+    const minLabel = min == null ? 'just now' : (min + ' min');
+
+    let html =
+      '<header class="kds-ticket__head">' +
+        '<div>' +
+          '<span class="kds-ticket__num">#' + escapeHtml(num) + '</span>' +
+          '<div style="font-size: var(--text-xs); margin-top: var(--space-1)">Table ' + tableLabel + '</div>' +
+        '</div>' +
+        '<div class="kds-ticket__meta"><strong>' + escapeHtml(minLabel) + '</strong>' + escapeHtml(statusLabel(min)) + '</div>' +
+      '</header>' +
+      '<div class="kds-ticket__sub">' +
+        '<span>Course ' + (t.course == null ? '—' : escapeHtml(t.course)) + '</span>' +
+        '<span>corr · ' + escapeHtml(corr) + '</span>' +
+      '</div>';
+
+    const items = Array.isArray(t.items) ? t.items : [];
+    for (const it of items) {
+      const qty = it.quantity == null ? 1 : it.quantity;
+      const mods = (it.modifiers && Array.isArray(it.modifiers) && it.modifiers.length > 0)
+        ? it.modifiers.map(function (m) { return typeof m === 'string' ? m : (m && m.name) || ''; }).filter(Boolean).join(' · ')
+        : '';
+      html +=
+        '<div class="kds-line">' +
+          '<div class="kds-line__row">' +
+            '<span class="kds-line__name">' + escapeHtml(it.product_name) + '</span>' +
+            '<span class="kds-line__qty">' + escapeHtml(qty) + '×</span>' +
+          '</div>' +
+          (it.notes ? '<div class="kds-line__mod">' + escapeHtml(it.notes) + '</div>' : '') +
+          (mods ? '<div class="kds-line__mod">' + escapeHtml(mods) + '</div>' : '') +
+          '<div class="kds-line__status">● Fired</div>' +
+        '</div>';
+    }
+
+    if (items.length > 0) {
+      const ids = items.map(function (i) { return i.id; }).filter(Boolean).join(',');
+      html += '<button class="kds-cta kds-cta--bump" data-bump-items="' + escapeHtml(ids) + '" aria-label="Bump and complete ticket">✓ Bump (Complete)</button>';
+    }
+
+    article.innerHTML = html;
+
+    const btn = article.querySelector('.kds-cta--bump');
+    if (btn) {
+      btn.addEventListener('click', function () { onBump(article, btn); });
+    }
+    return article;
+  }
+
+  async function onBump(article, btn) {
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const ids = (btn.dataset.bumpItems || '').split(',').filter(Boolean);
+    fading.add(article.dataset.ticketKey);
+    try {
+      for (const id of ids) {
+        const r = await fetch(COMMERCE + '/kds/items/' + id + '/bump', {
+          method: 'POST',
+          headers: authHeaders(),
+        });
+        if (!r.ok) throw new Error('bump ' + id + ' ' + r.status);
+      }
+      // Fade out — keep in `fading` long enough to outlive a poll cycle so it
+      // doesn't reappear if the API hasn't updated by the next refresh.
+      article.style.transition = 'opacity 400ms ease, transform 400ms ease';
+      article.style.opacity = '0';
+      article.style.transform = 'scale(0.96)';
+      setTimeout(function () {
+        article.remove();
+        // Force re-render on next poll.
+        if (grid) delete grid.dataset.key;
+      }, 420);
+      setTimeout(function () { fading.delete(article.dataset.ticketKey); }, POLL_MS * 2);
+    } catch (e) {
+      btn.disabled = false;
+      fading.delete(article.dataset.ticketKey);
+      article.style.boxShadow = '0 0 0 2px var(--kds-status-overdue)';
+    }
+  }
+
+  function tickClock() {
+    if (!clockEl) return;
+    clockEl.textContent = formatClock(new Date());
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    tickClock();
+    loadKds();
+  });
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    tickClock();
+    loadKds();
+  }
+  setInterval(loadKds, POLL_MS);
+  setInterval(tickClock, 30000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+/*
+ * ZBOS Design Tokens — public mirror for static HTML scaffolds.
+ *
+ * Single source of truth: apps/web/src/styles/tokens.css
+ * Update both files together until the Next.js app pipeline takes over.
+ */
+
+:root {
+  /* ── Brand · Primary ──────────────────────────────────────────── */
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+
+  /* ── Neutrals · Tailwind Gray ramp ────────────────────────────── */
+  --white: #ffffff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --black: #000000;
+
+  /* ── Status ──────────────────────────────────────────────────── */
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-500: #22c55e;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --orange-50: #fff7ed;
+  --orange-100: #ffedd5;
+  --orange-500: #f97316;
+  --orange-600: #ea580c;
+  --orange-700: #c2410c;
+  --red-50: #fef2f2;
+  --red-100: #fee2e2;
+  --red-500: #ef4444;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+  --red-900: #7f1d1d;
+
+  /* ── Semantic surface ────────────────────────────────────────── */
+  --surface-page: var(--gray-50);
+  --surface-card: var(--white);
+  --surface-raised: var(--white);
+  --surface-sunken: var(--gray-100);
+  --surface-overlay: rgba(17, 24, 39, 0.4);
+
+  --border-subtle: var(--gray-200);
+  --border-default: var(--gray-300);
+  --border-strong: var(--gray-400);
+  --border-focus: var(--blue-600);
+
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-500);
+  /* WCAG 1.4.3: gray-400 fails 4.5:1 — only use on `[disabled]` (exempt). */
+  --text-disabled: var(--gray-400);
+  --text-inverse: var(--white);
+  --text-brand: var(--blue-700);
+  --text-positive: var(--green-700);
+  --text-warning: var(--orange-700);
+  --text-negative: var(--red-700);
+  --text-positive-large: var(--green-600);
+  --text-warning-large: var(--orange-600);
+  --text-negative-large: var(--red-600);
+
+  /* ── KDS dark surface ────────────────────────────────────────── */
+  --kds-bg: #0b1220;
+  --kds-card: #111827;
+  --kds-card-border: #1f2937;
+  --kds-text-primary: #f9fafb;
+  --kds-text-secondary: #9ca3af;
+  --kds-status-ontrack: var(--green-500);
+  --kds-status-warn: var(--orange-500);
+  --kds-status-overdue: var(--red-500);
+
+  /* ── Typography ──────────────────────────────────────────────── */
+  --font-sans: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla";
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-loose: 1.7;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ── Spacing 4-pt ────────────────────────────────────────────── */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ── Radii ───────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-pill: 999px;
+
+  /* ── Shadows ─────────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 1px rgba(17, 24, 39, 0.04);
+  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06), 0 1px 3px rgba(17, 24, 39, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(17, 24, 39, 0.06), 0 2px 4px -2px rgba(17, 24, 39, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(17, 24, 39, 0.08), 0 4px 6px -4px rgba(17, 24, 39, 0.04);
+  --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.55);
+  --focus-ring-color: var(--blue-600);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* ── Layout ──────────────────────────────────────────────────── */
+  --layout-topnav-height: 56px;
+  --layout-sidenav-width: 240px;
+  --layout-sidenav-collapsed: 64px;
+  --layout-content-max: 1440px;
+  --layout-card-min: 280px;
+
+  --motion-fast: 120ms;
+  --motion-default: 180ms;
+  --motion-slow: 260ms;
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--blue-600);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--blue-700);
+  text-decoration: underline;
+}
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+  .zb-btn,
+  .zb-pill,
+  .zb-chip,
+  .zb-card,
+  .zb-topnav,
+  .zb-sidenav,
+  .zb-tenant {
+    border-color: CanvasText;
+  }
+}
